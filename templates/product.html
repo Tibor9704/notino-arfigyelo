@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header product-header">
+    <div>
+        <h1>{{ product.name }}</h1>
+    </div>
+</div>
+
+<p class="product-subtitle">
+    {{ product.brand }}
+    {% if product.concentration %} • {{ product.concentration }}{% endif %}
+    {% if not is_group and product.size %} • {{ product.size }}{% endif %}
+</p>
+
+<div class="product-actions">
+    <a href="{{ product.url }}" class="shop-button" target="_blank" rel="noopener">
+        Irány a Notino
+    </a>
+</div>
+
+{% if variants|length > 1 %}
+<div class="variant-tabs" aria-label="Kiszerelés választó">
+    <a href="/product-group/{{ product.id }}"
+       class="variant-tab {% if is_group %}active{% endif %}">
+        Összes
+    </a>
+
+    {% for variant in variants %}
+        <a href="/product/{{ variant.id }}"
+           class="variant-tab {% if active_product_id == variant.id %}active{% endif %}">
+            <span>{{ variant.size or "Méret nélkül" }}</span>
+        </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if variants| length == 1 or not is_group %}
+<div class="stats">
+
+<div class="stat-card">
+    <span>Aktuális ár</span>
+    <strong>
+        {% if latest_price %}
+            {{ latest_price|int }} Ft
+        {% else %}
+            -
+        {% endif %}
+    </strong>
+</div>
+
+<div class="stat-card">
+    <span>Legjobb ár</span>
+    <strong>
+        {% if lowest_price %}
+            {{ lowest_price|int }} Ft
+        {% else %}
+            -
+        {% endif %}
+    </strong>
+</div>
+
+<div class="stat-card">
+    <span>Legmagasabb ár</span>
+    <strong>
+        {% if highest_price %}
+            {{ highest_price|int }} Ft
+        {% else %}
+            -
+        {% endif %}
+    </strong>
+</div>
+
+</div>
+{% endif %}
+
+<div class="chart-filters">
+    <button onclick="updateChart(7)">7 nap</button>
+    <button onclick="updateChart(30)">30 nap</button>
+    <button onclick="updateChart('all')">Összes</button>
+</div>
+
+{% if chart_data.prices %}
+    <canvas id="priceChart"></canvas>
+
+    <script id="chart-data" type="application/json">
+    {{ chart_data|tojson }}
+    </script>
+{% else %}
+    <div class="empty-chart">
+        Nincs ár adat ehhez a termékhez
+    </div>
+{% endif %}
+
+<script src="{{ url_for('static', filename='chart.js') }}"></script>
+
+{% endblock %}

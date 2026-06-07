@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>Kedvenc illataid</h1>
+    </div>
+    <div class="header-summary">
+        <strong>{{ grouped_enriched|length }}</strong>
+        <span>figyelt illat</span>
+    </div>
+</div>
+
+<div class="products">
+
+{% for group in grouped_enriched %}
+{% set product = group.product %}
+
+<div class="card-wrapper {% if group.is_best_deal %}best-deal-card{% endif %}"
+     onclick="window.location.href='{% if group.variants|length == 1 %}/product/{{ group.variants[0].product.id }}{% else %}/product-group/{{ product.id }}{% endif %}'">
+
+    {% if group.show_badge %}
+        <div class="price-change {% if group.percent < 0 %}down{% else %}up{% endif %}">
+            {{ group.percent }}%
+        </div>
+    {% endif %}
+
+    <div class="card grouped-card">
+
+        <form action="/delete-group/{{ product.id }}" method="POST" class="delete-form"
+              onclick="event.stopPropagation()">
+          <button type="submit" aria-label="Kártya törlése">x</button>
+        </form>
+
+        <div class="card-content default-view">
+
+            <h2>{{ product.name }}</h2>
+
+            {% if not group.in_stock %}
+                <div class="stock-badge stock-out">
+                    Nincs készleten
+                </div>
+            {% endif %}
+
+            <p class="meta">
+                {{ product.concentration }}
+                {% if group.variants|length > 1 %} • {{ group.variants|length }} kiszerelés {% endif %}
+            </p>
+
+            {% if product.image_url %}
+                <div class="card-product-image">
+                    <img src="{{ product.image_url }}" alt="">
+                </div>
+            {% endif %}
+
+            <div class="variant-list">
+                {% for variant_item in group.variants %}
+                {% set variant = variant_item.product %}
+                {% set data = latest_prices[variant.id] %}
+                {% set price_class = "" %}
+
+                {% if data.latest and data.previous %}
+                    {% if data.latest.price < data.previous.price %}
+                        {% set price_class = "price-down" %}
+                    {% elif data.latest.price > data.previous.price %}
+                        {% set price_class = "price-up" %}
+                    {% endif %}
+                {% endif %}
+
+                <div class="variant-row">
+                    <a href="/product/{{ variant.id }}" class="variant-link" onclick="event.stopPropagation()">
+                        <span class="variant-size">
+                            {{ variant.size or " - " }}
+                            {% if not variant.in_stock %}<span class="variant-stock">nincs</span>{% endif %}
+                        </span>
+
+                        {% if data.latest %}
+                            <span class="variant-price {{ price_class }}">{{ data.latest.price|int }} Ft</span>
+                        {% else %}
+                            <span class="variant-price price-unavailable">-</span>
+                        {% endif %}
+                    </a>
+
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if group.is_best_deal %}
+                <div class="deal-badge">
+                    Tuti biznisz
+                </div>
+            {% endif %}
+
+        </div>
+
+        <div class="card-content hover-view">
+          {% if product.image_url %}
+            <img src="{{ product.image_url }}">
+          {% endif %}
+        </div>
+
+      </div>
+</div>
+
+{% endfor %}
+
+</div>
+
+<hr class="divider">
+
+<div class="add-section" id="add-form">
+
+    <h2>Parfüm hozzáadása</h2>
+
+    <form method="POST" action="/add" class="form bottom-form">
+        <input type="url" name="url" placeholder="Notino URL" required />
+        <button type="submit">Hozzáadás</button>
+    </form>
+
+</div>
+
+{% endblock %}

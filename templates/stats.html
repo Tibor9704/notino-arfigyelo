@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>Statisztikák</h1>
+    </div>
+</div>
+
+<div class="stats-page">
+
+    {% for period, data in stats.items() %}
+
+    <div class="stats-period">
+
+        <h2>{{ period }}</h2>
+
+        <div class="stats-grid">
+
+            <div class="stats-block">
+                <h3>Hullámvasút</h3>
+
+                <div class="stats-list">
+                    {% for item in data.top5 %}
+                    <div class="stats-item">
+                        <div>
+                            <div class="stats-name">{{ item.name }}</div>
+                            <div class="stats-size">{{ item.size }}</div>
+                        </div>
+
+                        <div class="stats-change">
+                            {{ item.count }}X
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="stats-block">
+                <h3>Árrekorder</h3>
+
+                <div class="stats-list">
+                    {% for item in data.up %}
+                    <div class="stats-item">
+                        <div>
+                            <div class="stats-name">{{ item.name }}</div>
+                            <div class="stats-size">{{ item.size }}</div>
+                        </div>
+
+                        <div class="stats-change up">
+                            +{{ item.change }} Ft
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="stats-block">
+                <h3>Tuti deal</h3>
+
+                <div class="stats-list">
+                    {% for item in data.down %}
+                    <div class="stats-item">
+                        <div>
+                            <div class="stats-name">{{ item.name }}</div>
+                            <div class="stats-size">{{ item.size }}</div>
+                        </div>
+
+                        <div class="stats-change down">
+                            {{ item.change }} Ft
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+{% endblock %}

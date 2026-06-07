@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Fragranza</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="top-strip">
+    
+</div>
+
+<nav class="navbar">
+    <div class="nav-left">
+        <a class="nav-link" href="/">Fragranza</a>
+    </div>
+
+    <div class="nav-right">
+        <form method="GET" action="/" class="search-form">
+            <input
+                type="text"
+                name="search"
+                placeholder="Keresés..."
+                value="{{ search or '' }}"
+            >
+        </form>
+        <a href="/stats" class="nav-link">📈</a>
+        <a href="#add-form" class="nav-link nav-action">+</a>
+    </div>
+</nav>
+
+<div class="container">
+    {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>
