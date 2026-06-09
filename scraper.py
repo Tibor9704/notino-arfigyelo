@@ -95,7 +95,7 @@ def scrape_product(url):
         unique = {}
 
         for v in variants:
-            key = v["url"]  # ez a legstabilabb azonosító
+            key = v["url"]
 
             if key in unique:
                 continue

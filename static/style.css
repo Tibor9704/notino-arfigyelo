@@ -184,7 +184,7 @@ h1 {
 .card {
   position: relative;
   width: 100%;
-  height: 360px;
+  height: 460px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -265,8 +265,8 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 92px;
-  height: 90px;
+  width: 200px;
+  height: 200px;
   margin: 2px 0 8px;
 }
 
@@ -356,28 +356,6 @@ h1 {
 
 .price-up {
   border-color: #ffd5dc;
-  background: #fff0f2;
-  color: var(--danger);
-}
-
-.price-change {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 50;
-  padding: 8px 12px;
-  border-radius: 999px;
-  box-shadow: 0 8px 20px rgba(42, 31, 38, 0.16);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.price-change.down {
-  background: #e9f7ef;
-  color: var(--success);
-}
-
-.price-change.up {
   background: #fff0f2;
   color: var(--danger);
 }
@@ -505,6 +483,20 @@ h1 {
 
 .variant-tab.active {
   background: var(--accent-soft);
+}
+
+.variant-discount {
+  margin-left: 6px;
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.variant-increase {
+  margin-left: 6px;
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .product-actions {

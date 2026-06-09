@@ -236,8 +236,14 @@ def index():
             change_amount = latest.price - previous.price
             percent = round((change_amount / previous.price) * 100, 1)
 
-            is_best_deal = percent <= -10
             show_badge = abs(percent) >= 1
+
+        if latest and len(history) > 1:
+            previous_prices = [h.price for h in history[1:] if h.price is not None]
+
+            if previous_prices:
+                historical_low = min(previous_prices)
+                is_best_deal = latest.price <= historical_low * 0.9
 
         enriched.append(
             {

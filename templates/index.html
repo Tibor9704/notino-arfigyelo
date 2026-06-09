@@ -19,11 +19,7 @@
 <div class="card-wrapper {% if group.is_best_deal %}best-deal-card{% endif %}"
      onclick="window.location.href='{% if group.variants|length == 1 %}/product/{{ group.variants[0].product.id }}{% else %}/product-group/{{ product.id }}{% endif %}'">
 
-    {% if group.show_badge %}
-        <div class="price-change {% if group.percent < 0 %}down{% else %}up{% endif %}">
-            {{ group.percent }}%
-        </div>
-    {% endif %}
+
 
     <div class="card grouped-card">
 
@@ -58,6 +54,14 @@
                 {% set variant = variant_item.product %}
                 {% set data = latest_prices[variant.id] %}
                 {% set price_class = "" %}
+                {% set variant_percent = None %}
+
+                {% if data.latest and data.previous and data.previous.price %}
+                    {% set variant_percent =
+                        (((data.latest.price - data.previous.price)
+                        / data.previous.price) * 100) | round(1)
+                    %}
+                {% endif %}
 
                 {% if data.latest and data.previous %}
                     {% if data.latest.price < data.previous.price %}
@@ -71,7 +75,20 @@
                     <a href="/product/{{ variant.id }}" class="variant-link" onclick="event.stopPropagation()">
                         <span class="variant-size">
                             {{ variant.size or " - " }}
-                            {% if not variant.in_stock %}<span class="variant-stock">nincs</span>{% endif %}
+
+                            {% if not variant.in_stock %}
+                                <span class="variant-stock">nincs</span>
+                            {% endif %}
+
+                            {% if variant_percent is not none and variant_percent <= -1 %}
+                                <span class="variant-discount">
+                                    ↓{{ variant_percent|abs }}%
+                                </span>
+                            {% elif variant_percent is not none and variant_percent >= 1 %}
+                                <span class="variant-increase">
+                                    ↑{{ variant_percent }}%
+                                </span>
+                            {% endif %}
                         </span>
 
                         {% if data.latest %}
@@ -87,7 +104,7 @@
 
             {% if group.is_best_deal %}
                 <div class="deal-badge">
-                    Tuti biznisz
+                    All-time low!
                 </div>
             {% endif %}
 
