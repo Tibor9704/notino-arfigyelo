@@ -2,9 +2,13 @@
 {% block content %}
 
 <div class="page-header product-header">
-    <div>
+
         <h1>{{ product.name }}</h1>
-    </div>
+
+    <a href="{{ product.url }}" class="shop-button" target="_blank" rel="noopener">
+        Irány a Notino
+    </a>
+
 </div>
 
 <p class="product-subtitle">
@@ -12,12 +16,6 @@
     {% if product.concentration %} • {{ product.concentration }}{% endif %}
     {% if not is_group and product.size %} • {{ product.size }}{% endif %}
 </p>
-
-<div class="product-actions">
-    <a href="{{ product.url }}" class="shop-button" target="_blank" rel="noopener">
-        Irány a Notino
-    </a>
-</div>
 
 {% if variants|length > 1 %}
 <div class="variant-tabs" aria-label="Kiszerelés választó">
@@ -27,10 +25,18 @@
     </a>
 
     {% for variant in variants %}
-        <a href="/product/{{ variant.id }}"
-           class="variant-tab {% if active_product_id == variant.id %}active{% endif %}">
-            <span>{{ variant.size or "Méret nélkül" }}</span>
-        </a>
+    <a href="/product/{{ variant.id }}"
+    class="variant-tab {% if active_product_id == variant.id %}active{% endif %}">
+    
+        <span>
+            {{ variant.size or "Méret nélkül" }}
+
+            {% if best_variant_id and best_variant_id == variant.id %}
+                <span class="best-flame">🔥</span>
+            {% endif %}
+        </span>
+
+    </a>
     {% endfor %}
 </div>
 {% endif %}

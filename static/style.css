@@ -112,6 +112,10 @@ body {
 }
 
 .product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 10px;
 }
 
@@ -501,11 +505,6 @@ h1 {
   font-weight: 900;
 }
 
-.product-actions {
-  display: flex;
-  margin: -8px 0 22px;
-}
-
 .shop-button {
   display: inline-flex;
   align-items: center;
@@ -817,4 +816,15 @@ h1 {
 .stat-highlight {
   border-color: rgba(210, 31, 102, 0.35);
   background: linear-gradient(180deg, #fff7fb, #ffffff);
+}
+
+.variant-tab {
+  position: relative;
+}
+
+.best-flame {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 12px;
 }

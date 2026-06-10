@@ -413,6 +413,26 @@ def product_group_detail(product_id):
     variants = get_group_products(product)
     chart_data = build_chart_data(variants)
 
+    ml_prices = []
+
+    for v in variants:
+        latest = (
+            PriceHistory.query.filter_by(product_id=v.id)
+            .order_by(PriceHistory.checked_at.desc())
+            .first()
+        )
+
+        ml = extract_ml(v.size)
+        ppm = int(latest.price) // ml if ml and latest and latest.price else None
+
+        ml_prices.append((v.id, ppm))
+
+    valid = [x for x in ml_prices if x[1] is not None]
+
+    best_variant_id = None
+    if valid:
+        best_variant_id = min(valid, key=lambda x: x[1])[0]
+
     return render_template(
         "product.html",
         product=product,
@@ -420,6 +440,7 @@ def product_group_detail(product_id):
         chart_data=chart_data,
         active_product_id=None,
         is_group=True,
+        best_variant_id=best_variant_id,
     )
 
 
@@ -436,6 +457,26 @@ def product_detail(product_id):
 
     ml = extract_ml(product.size)
     price_per_ml = int(float(latest_price)) // ml if ml and latest_price else None
+
+    ml_prices = []
+
+    for v in variants:
+        latest = (
+            PriceHistory.query.filter_by(product_id=v.id)
+            .order_by(PriceHistory.checked_at.desc())
+            .first()
+        )
+
+        ml = extract_ml(v.size)
+        ppm = int(latest.price) // ml if ml and latest and latest.price else None
+
+        ml_prices.append((v.id, ppm))
+
+    valid = [x for x in ml_prices if x[1] is not None]
+
+    best_variant_id = None
+    if valid:
+        best_variant_id = min(valid, key=lambda x: x[1])[0]
 
     is_best_price = (
         latest_price is not None
@@ -456,6 +497,7 @@ def product_detail(product_id):
         price_per_ml=price_per_ml,
         is_best_price=is_best_price,
         active_product_id=product.id,
+        best_variant_id=best_variant_id,
         is_group=False,
     )
 
