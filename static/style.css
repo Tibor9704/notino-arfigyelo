@@ -360,37 +360,39 @@ h1 {
   color: var(--danger);
 }
 
-.delete-form {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 60;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
 .card:hover .delete-form {
   opacity: 1;
 }
 
 .delete-form button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 52px;
+  height: 52px;
   border: none;
-  border-radius: 50%;
-  background: var(--surface);
-  box-shadow: 0 8px 20px rgba(42, 31, 38, 0.14);
-  color: var(--muted);
   cursor: pointer;
-  font-size: 19px;
-  line-height: 1;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
+
+  background: var(--surface);
+
+  border-radius: 0 0 0 52px;
+
+  box-shadow: -4px 4px 14px rgba(0, 0, 0, 0.12);
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+
+  padding: 10px 12px 0 0;
+
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--muted);
+}
+
+.delete-form {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 60;
+  margin: 0;
 }
 
 .delete-form button:hover {
@@ -810,4 +812,9 @@ h1 {
   font-size: 14px;
   font-weight: 900;
   box-shadow: 0 2px 6px rgba(42, 31, 38, 0.06);
+}
+
+.stat-highlight {
+  border-color: rgba(210, 31, 102, 0.35);
+  background: linear-gradient(180deg, #fff7fb, #ffffff);
 }

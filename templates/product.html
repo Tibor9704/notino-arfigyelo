@@ -47,6 +47,7 @@
             -
         {% endif %}
     </strong>
+    
 </div>
 
 <div class="stat-card">
@@ -71,6 +72,17 @@
     </strong>
 </div>
 
+<div class="stat-card stat-highlight">
+     <span>Ár / ml</span>
+    <strong>
+        {% if price_per_ml %}
+            {{ price_per_ml }} Ft/ml
+        {% else %}
+            -
+        {% endif %}
+    </strong>
+</div>
+
 </div>
 {% endif %}
 
@@ -88,7 +100,7 @@
     </script>
 {% else %}
     <div class="empty-chart">
-        Nincs ár adat ehhez a termékhez
+        Nincs ár ehhez a termékhez
     </div>
 {% endif %}
 

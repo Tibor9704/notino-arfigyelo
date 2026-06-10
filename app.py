@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 from datetime import datetime
 from datetime import timedelta
-
+import re
 from config import Config
 from models import db, Product, PriceHistory
 from scraper import scrape_product
@@ -16,6 +16,21 @@ with app.app_context():
 
 
 # HELPERS
+
+
+def extract_ml(size):
+    if not size:
+        return None
+
+    match = re.search(r"(\d+)\s*ml", size.lower())
+    return int(match.group(1)) if match else None
+
+
+def price_per_ml(price, size):
+    ml = extract_ml(size)
+    if not ml or not price:
+        return None
+    return int(float(price)) // ml
 
 
 def normalize_size(s):
@@ -39,7 +54,6 @@ def normalize_product_name(product):
 
 
 def normalize_url(url):
-    # Notino /p-xxxx levágása
     if "/p-" in url:
         return url.split("/p-")[0].rstrip("/") + "/"
     return url.rstrip("/") + "/"
@@ -420,6 +434,9 @@ def product_detail(product_id):
     highest_price = max(prices) if prices else None
     latest_price = prices[-1] if prices else None
 
+    ml = extract_ml(product.size)
+    price_per_ml = int(float(latest_price)) // ml if ml and latest_price else None
+
     is_best_price = (
         latest_price is not None
         and lowest_price is not None
@@ -436,6 +453,7 @@ def product_detail(product_id):
         lowest_price=lowest_price,
         highest_price=highest_price,
         latest_price=latest_price,
+        price_per_ml=price_per_ml,
         is_best_price=is_best_price,
         active_product_id=product.id,
         is_group=False,
