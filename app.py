@@ -342,9 +342,9 @@ def add_product():
         return redirect(url_for("index"))
 
     for variant in data["variants"]:
-        exists = Product.query.filter_by(
-            name=data["name"], size=variant["size"]
-        ).first()
+        variant_url = normalize_url(variant["url"])
+
+        exists = Product.query.filter_by(url=variant_url).first()
 
         if exists:
             continue
@@ -355,7 +355,7 @@ def add_product():
             concentration=data["concentration"],
             size=variant["size"],
             image_url=variant["image_url"],
-            url=normalize_url(variant["url"]),
+            url=variant_url,
             in_stock=variant["in_stock"],
         )
 
