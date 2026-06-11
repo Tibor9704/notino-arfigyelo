@@ -54,8 +54,6 @@ def normalize_product_name(product):
 
 
 def normalize_url(url):
-    if "/p-" in url:
-        return url.split("/p-")[0].rstrip("/") + "/"
     return url.rstrip("/") + "/"
 
 
@@ -342,7 +340,7 @@ def add_product():
         return redirect(url_for("index"))
 
     for variant in data["variants"]:
-        variant_url = normalize_url(variant["url"])
+        variant_url = variant["url"].rstrip("/") + "/"
 
         exists = Product.query.filter_by(url=variant_url).first()
 

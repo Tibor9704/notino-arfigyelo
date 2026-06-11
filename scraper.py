@@ -92,21 +92,9 @@ def scrape_product(url):
 
         variants = []
 
-        unique = {}
-
-        for v in variants:
-            key = v["url"]
-
-            if key in unique:
-                continue
-
-            unique[key] = v
-
-        variants = list(unique.values())
-
         scripts = soup.find_all("script", attrs={"type": "application/ld+json"})
 
-        product_json = None
+        offers = []
 
         for s in scripts:
             try:
@@ -116,18 +104,29 @@ def scrape_product(url):
                 if isinstance(data, list):
                     for item in data:
                         if item.get("@type") == "Product":
-                            product_json = item
+                            item_offers = item.get("offers", [])
+                            if isinstance(item_offers, dict):
+                                item_offers = [item_offers]
+                            offers.extend(item_offers)
                 else:
                     if data.get("@type") == "Product":
-                        product_json = data
+                        item_offers = data.get("offers", [])
+                        if isinstance(item_offers, dict):
+                            item_offers = [item_offers]
+                        offers.extend(item_offers)
 
             except Exception:
                 continue
 
-        offers = product_json.get("offers", [])
+        unique = {}
 
-        if isinstance(offers, dict):
-            offers = [offers]
+        for offer in offers:
+            key = offer.get("url") or offer.get("name")
+            if key in unique:
+                continue
+            unique[key] = offer
+
+        offers = list(unique.values())
 
         for offer in offers:
             size_match = re.search(r"(\d+)\s*ml", offer.get("name", ""), re.I)
@@ -145,7 +144,7 @@ def scrape_product(url):
                     "in_stock": ("InStock" in offer.get("availability", "")),
                 }
             )
-        else:
+        if not offers:
             print("NO PRODUCT JSON FOUND")
 
         return {
