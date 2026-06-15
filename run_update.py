@@ -73,18 +73,16 @@ def run_update():
 
                 product.in_stock = stock
 
-                # PRICE LOGIC (SMART UPDATE)
+                # PRICE LOGIC
                 if price is None:
                     log(f"[{datetime.now()}] NO PRICE -> {product.name}")
                     continue
 
                 last_price = get_latest_price(product.id)
 
-                # csak akkor írunk DB-be ha változott
                 if last_price == price:
                     log(f"[{datetime.now()}] NO CHANGE -> {product.name} ({price})")
 
-                    # frissítjük timestampet, de nem duplikálunk history-t
                     latest = (
                         PriceHistory.query.filter_by(product_id=product.id)
                         .order_by(PriceHistory.checked_at.desc())
@@ -105,7 +103,6 @@ def run_update():
 
                 log(f"[{datetime.now()}] PRICE UPDATE -> {product.name} -> {price} Ft")
 
-                # kis delay anti-ban
                 time.sleep(0.4)
 
             except Exception as e:

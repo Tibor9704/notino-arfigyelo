@@ -26,7 +26,7 @@ def scrape_product(url):
 
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # BRAND + NAME (FŐ FIX)
+        # BRAND + NAME
 
         wrapper = soup.select_one("span.pjrv267")
 
@@ -100,7 +100,6 @@ def scrape_product(url):
             try:
                 data = json.loads(s.string)
 
-                # több JSON esetén
                 if isinstance(data, list):
                     for item in data:
                         if item.get("@type") == "Product":
@@ -144,8 +143,6 @@ def scrape_product(url):
                     "in_stock": ("InStock" in offer.get("availability", "")),
                 }
             )
-        if not offers:
-            print("NO PRODUCT JSON FOUND")
 
         return {
             "name": full_name,

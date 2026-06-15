@@ -269,7 +269,7 @@ def index():
         )
 
     enriched.sort(
-        key=lambda x: (not x["restocked_at"], not x["is_best_deal"], x["change_amount"])
+        key=lambda x: (not x["is_best_deal"], not x["restocked_at"], x["change_amount"])
     )
 
     groups = {}
@@ -316,7 +316,7 @@ def index():
         group["variants"].sort(key=lambda x: size_sort_key(x["product"]))
 
     grouped_enriched.sort(
-        key=lambda x: (not x["restocked_at"], not x["is_best_deal"], x["change_amount"])
+        key=lambda x: (not x["is_best_deal"], not x["restocked_at"], x["change_amount"])
     )
 
     return render_template(
