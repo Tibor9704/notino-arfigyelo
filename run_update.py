@@ -39,25 +39,72 @@ def run_update():
 
                 variants = data.get("variants") or []
 
-                matched = None
+                if not variants:
+                    log(f"[{datetime.now()}] NO VARIANTS FOUND -> {product.name}")
+                    continue
 
-                if product.size == "Mérés alatt" and variants:
-                    matched = variants[0]
+                if product.size == "Mérés alatt":
+                    log(f"[{datetime.now()}] PROCESSING NEW PRODUCT URL: {product.url}")
+                    
+                    first_v = variants[0]
                     product.name = data["name"]
                     product.brand = data["brand"]
                     product.concentration = data["concentration"]
-                    product.size = matched["size"]
-                    product.image_url = matched["image_url"]
-                else:
-                    for v in variants:
-                        if normalize_size(v["size"]) == normalize_size(product.size):
-                            matched = v
-                            break
+                    product.size = first_v["size"]
+                    product.image_url = first_v["image_url"]
+                    product.url = first_v["url"].rstrip("/") + "/"
+                    product.in_stock = first_v["in_stock"]
+                    
+                    db.session.flush() 
+                    
+                    if first_v["price"] is not None:
+                        db.session.add(PriceHistory(
+                            product_id=product.id,
+                            price=first_v["price"],
+                            checked_at=datetime.utcnow()
+                        ))
+                    
+                    log(f"[{datetime.now()}] FIRST VARIANT ADDED -> {product.name} ({product.size})")
+
+                    for extra_v in variants[1:]:
+                        extra_url = extra_v["url"].rstrip("/") + "/"
+                        
+                        exists = Product.query.filter_by(url=extra_url).first()
+                        if exists:
+                            continue
+                            
+                        new_product = Product(
+                            name=data["name"],
+                            brand=data["brand"],
+                            concentration=data["concentration"],
+                            size=extra_v["size"],
+                            image_url=extra_v["image_url"],
+                            url=extra_url,
+                            in_stock=extra_v["in_stock"]
+                        )
+                        db.session.add(new_product)
+                        db.session.flush()
+                        
+                        if extra_v["price"] is not None:
+                            db.session.add(PriceHistory(
+                                product_id=new_product.id,
+                                price=extra_v["price"],
+                                checked_at=datetime.utcnow()
+                            ))
+                        log(f"[{datetime.now()}] EXTRA VARIANT GENERATED -> {data['name']} ({extra_v['size']})")
+                    
+                    db.session.commit()
+                    time.sleep(1)
+                    continue
+
+                matched = None
+                for v in variants:
+                    if normalize_size(v["size"]) == normalize_size(product.size):
+                        matched = v
+                        break
 
                 if not matched:
-                    log(
-                        f"[{datetime.now()}] NO VARIANT MATCH -> {product.name}"
-                    )
+                    log(f"[{datetime.now()}] NO VARIANT MATCH -> {product.name} ({product.size})")
                     continue
 
                 price = matched["price"]
@@ -76,14 +123,8 @@ def run_update():
                 last_price = get_latest_price(product.id)
 
                 if last_price == price:
-                    log(
-                        f"[{datetime.now()}] NO CHANGE -> {product.name} ({price})"
-                    )
-                    latest = (
-                        PriceHistory.query.filter_by(product_id=product.id)
-                        .order_by(PriceHistory.checked_at.desc())
-                        .first()
-                    )
+                    log(f"[{datetime.now()}] NO CHANGE -> {product.name} ({price})")
+                    latest = PriceHistory.query.filter_by(product_id=product.id).order_by(PriceHistory.checked_at.desc()).first()
                     if latest:
                         latest.checked_at = datetime.utcnow()
                     continue
@@ -95,10 +136,8 @@ def run_update():
                 )
                 db.session.add(history)
 
-                log(
-                    f"[{datetime.now()}] PRICE UPDATE -> {product.name} -> {price} Ft"
-                )
-                time.sleep(1)  
+                log(f"[{datetime.now()}] PRICE UPDATE -> {product.name} ({product.size}) -> {price} Ft")
+                time.sleep(1)
 
             except Exception as e:
                 log(f"[{datetime.now()}] ERROR -> {product.name} -> {e}")
@@ -106,7 +145,6 @@ def run_update():
 
         db.session.commit()
         log(f"[{datetime.now()}] UPDATE FINISHED")
-
 
 if __name__ == "__main__":
     run_update()
