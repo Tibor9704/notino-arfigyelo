@@ -3,3 +3,4 @@ Flask-SQLAlchemy
 beautifulsoup4
 requests
 APScheduler
+psycopg2-binary
