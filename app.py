@@ -334,44 +334,33 @@ def index():
 @app.route("/add", methods=["POST"])
 def add_product():
     url = request.form.get("url")
-
-    data = scrape_product(url)
-    if not data:
+    if not url:
         return redirect(url_for("index"))
 
-    for variant in data["variants"]:
-        variant_url = variant["url"].rstrip("/") + "/"
+    clean_url = url.strip().rstrip("/") + "/"
 
-        exists = Product.query.filter_by(url=variant_url).first()
+    exists = Product.query.filter_by(url=clean_url).first()
 
-        if exists:
-            continue
-
+    if not exists:
         product = Product(
-            name=data["name"],
-            brand=data["brand"],
-            concentration=data["concentration"],
-            size=variant["size"],
-            image_url=variant["image_url"],
-            url=variant_url,
-            in_stock=variant["in_stock"],
+            name="Új termék (Feldolgozás alatt...)",
+            brand=None,
+            concentration=None,
+            size="Mérés alatt",
+            image_url="https://via.placeholder.com/150", 
+            url=clean_url,
+            in_stock=True,
+            created_at=datetime.utcnow()
         )
+        
+        try:
+            db.session.add(product)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Hiba a termék mentése során: {e}")
 
-        db.session.add(product)
-        db.session.flush()
-
-        if variant["price"] is not None:
-            db.session.add(
-                PriceHistory(
-                    product_id=product.id,
-                    price=variant["price"],
-                    checked_at=datetime.utcnow(),
-                )
-            )
-
-    db.session.commit()
     return redirect(url_for("index"))
-
 
 # DELETE
 
