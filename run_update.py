@@ -40,10 +40,19 @@ def run_update():
                 variants = data.get("variants") or []
 
                 matched = None
-                for v in variants:
-                    if normalize_size(v["size"]) == normalize_size(product.size):
-                        matched = v
-                        break
+
+                if product.size == "Mérés alatt" and variants:
+                    matched = variants[0]
+                    product.name = data["name"]
+                    product.brand = data["brand"]
+                    product.concentration = data["concentration"]
+                    product.size = matched["size"]
+                    product.image_url = matched["image_url"]
+                else:
+                    for v in variants:
+                        if normalize_size(v["size"]) == normalize_size(product.size):
+                            matched = v
+                            break
 
                 if not matched:
                     log(
