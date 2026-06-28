@@ -15,6 +15,8 @@ if (chartEl) {
         '#4f46e5'
     ];
 
+    const uniqueLabels = [...new Set((chartData.labels || []).filter(Boolean))];
+
     const originalDatasets = (chartData.datasets || [{
         label: 'Ár (Ft)',
         data: chartData.prices
@@ -32,7 +34,7 @@ if (chartEl) {
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: chartData.labels,
+            labels: uniqueLabels,
             datasets: originalDatasets.map(dataset => ({ ...dataset }))
         },
         options: {
@@ -71,10 +73,10 @@ if (chartEl) {
         let datasets = originalDatasets;
 
         if (days === 'all') {
-            chart.data.labels = labels;
+            chart.data.labels = uniqueLabels;
             chart.data.datasets = datasets.map(dataset => ({ ...dataset }));
         } else {
-            chart.data.labels = labels.slice(-days);
+            chart.data.labels = uniqueLabels.slice(-days);
             chart.data.datasets = datasets.map(dataset => ({
                 ...dataset,
                 data: dataset.data.slice(-days)

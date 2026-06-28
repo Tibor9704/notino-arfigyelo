@@ -71,6 +71,7 @@
                     {% endif %}
                 {% endif %}
 
+                {% if loop.first %}
                 <div class="variant-row">
                     <a href="/product/{{ variant.id }}" class="variant-link" onclick="event.stopPropagation()">
                         <span class="variant-size">
@@ -97,9 +98,67 @@
                             <span class="variant-price price-unavailable">-</span>
                         {% endif %}
                     </a>
-
                 </div>
+                {% endif %}
                 {% endfor %}
+
+                {% if group.variants|length > 1 %}
+                <div class="variant-hover-area" onclick="event.stopPropagation()">
+                    <div class="variant-hover-list">
+                        {% for variant_item in group.variants %}
+                        {% set variant = variant_item.product %}
+                        {% set data = latest_prices[variant.id] %}
+                        {% set price_class = "" %}
+                        {% set variant_percent = None %}
+
+                        {% if data.latest and data.previous and data.previous.price %}
+                            {% set variant_percent =
+                                (((data.latest.price - data.previous.price)
+                                / data.previous.price) * 100) | round(1)
+                            %}
+                        {% endif %}
+
+                        {% if data.latest and data.previous %}
+                            {% if data.latest.price < data.previous.price %}
+                                {% set price_class = "price-down" %}
+                            {% elif data.latest.price > data.previous.price %}
+                                {% set price_class = "price-up" %}
+                            {% endif %}
+                        {% endif %}
+
+                        {% if not loop.first %}
+                        <div class="variant-row">
+                            <a href="/product/{{ variant.id }}" class="variant-link" onclick="event.stopPropagation()">
+                                <span class="variant-size">
+                                    {{ variant.size or " - " }}
+
+                                    {% if not variant.in_stock %}
+                                        <span class="variant-stock">nincs</span>
+                                    {% endif %}
+
+                                    {% if variant_percent is not none and variant_percent <= -1 %}
+                                        <span class="variant-discount">
+                                            ↓{{ variant_percent|abs }}%
+                                        </span>
+                                    {% elif variant_percent is not none and variant_percent >= 1 %}
+                                        <span class="variant-increase">
+                                            ↑{{ variant_percent }}%
+                                        </span>
+                                    {% endif %}
+                                </span>
+
+                                {% if data.latest %}
+                                    <span class="variant-price {{ price_class }}">{{ data.latest.price|int }} Ft</span>
+                                {% else %}
+                                    <span class="variant-price price-unavailable">-</span>
+                                {% endif %}
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             {% if group.is_best_deal %}

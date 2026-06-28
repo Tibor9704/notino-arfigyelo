@@ -81,8 +81,8 @@ def get_group_products(product):
 
 def build_chart_data(products):
     histories_by_product = {}
-    checked_at_values = set()
     all_prices = []
+    all_labels = set()
 
     for product in products:
         history = (
@@ -94,11 +94,10 @@ def build_chart_data(products):
         histories_by_product[product.id] = clean_history
 
         for point in clean_history:
-            checked_at_values.add(point.checked_at)
+            all_labels.add(point.checked_at.strftime("%Y-%m-%d %H:%M"))
             all_prices.append(point.price)
 
-    ordered_checked_at = sorted(checked_at_values)
-    labels = [dt.strftime("%Y-%m-%d %H:%M") for dt in ordered_checked_at]
+    labels = sorted(all_labels)
 
     datasets = []
     for product in products:
