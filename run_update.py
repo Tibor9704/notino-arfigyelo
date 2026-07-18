@@ -69,18 +69,19 @@ def run_update():
                     for extra_v in variants[1:]:
                         extra_url = extra_v["url"].rstrip("/") + "/"
                         
-                        exists = Product.query.filter_by(url=extra_url).first()
+                        exists = Product.query.filter_by(user_id=product.user_id, url=extra_url).first()
                         if exists:
                             continue
-                            
+
                         new_product = Product(
+                            user_id=product.user_id,
                             name=data["name"],
                             brand=data["brand"],
                             concentration=data["concentration"],
                             size=extra_v["size"],
                             image_url=extra_v["image_url"],
                             url=extra_url,
-                            in_stock=extra_v["in_stock"]
+                            in_stock=extra_v["in_stock"],
                         )
                         db.session.add(new_product)
                         db.session.flush()

@@ -4,10 +4,26 @@ from datetime import datetime
 db = SQLAlchemy()
 
 
-class Product(db.Model):
-    __tablename__ = "products"
+class User(db.Model):
+    __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), nullable=False, unique=True, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    products = db.relationship("Product", backref="owner", lazy=True)
+
+
+class Product(db.Model):
+    __tablename__ = "products"
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "url", name="uq_user_product_url"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
 
     name = db.Column(db.String(255), nullable=False)
 
@@ -17,7 +33,7 @@ class Product(db.Model):
 
     size = db.Column(db.String(100))
 
-    url = db.Column(db.Text, nullable=False, unique=True)
+    url = db.Column(db.Text, nullable=False)
 
     image_url = db.Column(db.Text)
 

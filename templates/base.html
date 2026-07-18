@@ -17,24 +17,46 @@
 
 <nav class="navbar">
     <div class="nav-left">
-        <a class="nav-link" href="/">Fragranza</a>
+        <a class="nav-link brand-link" href="/">Fragranza</a>
     </div>
 
     <div class="nav-right">
-        <form method="GET" action="/" class="search-form">
-            <input
-                type="text"
-                name="search"
-                placeholder="Keresés..."
-                value="{{ search or '' }}"
-            >
-        </form>
-        <a href="/stats" class="nav-link">📈</a>
-        <a href="#add-form" class="nav-link nav-action">+</a>
+        {% if session.get('user_id') %}
+            <form method="GET" action="/" class="search-form">
+                <input
+                    type="text"
+                    name="search"
+                    placeholder="Keresés..."
+                    value="{{ search or '' }}"
+                >
+            </form>
+
+            <div class="nav-tools">
+                <a href="/stats" class="nav-link nav-icon">📈</a>
+                <a href="#add-form" class="nav-link nav-action">+</a>
+            </div>
+
+            <div class="nav-user-block">
+                <span class="nav-user">{{ current_user.username if current_user else 'Fiók' }}</span>
+                <form method="POST" action="{{ url_for('logout') }}" class="logout-form">
+                    <button type="submit" class="nav-link nav-logout">Kilépés</button>
+                </form>
+            </div>
+        {% endif %}
     </div>
 </nav>
 
 <div class="container">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                    <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
     {% block content %}{% endblock %}
 </div>
 

@@ -17,4 +17,5 @@ class Config:
     if "?pgbouncer=true" in SQLALCHEMY_DATABASE_URI:
         SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("?pgbouncer=true", "")
 
+    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
     SQLALCHEMY_TRACK_MODIFICATIONS = False

@@ -1,18 +1,88 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from datetime import datetime
 from datetime import timedelta
 import re
+from sqlalchemy import inspect, text
+from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
-from models import db, Product, PriceHistory
+from models import db, Product, PriceHistory, User
 from scraper import scrape_product
 
 app = Flask(__name__)
 app.config.from_object(Config)
+app.secret_key = Config.SECRET_KEY
 
 db.init_app(app)
 
+
+@app.context_processor
+def inject_current_user():
+    return {"current_user": get_current_user()}
+
+
+def ensure_products_user_column():
+    with app.app_context():
+        inspector = inspect(db.engine)
+        if not inspector.has_table("products"):
+            return
+
+        columns = [column["name"] for column in inspector.get_columns("products")]
+        if "user_id" not in columns:
+            with db.engine.begin() as conn:
+                conn.execute(text("ALTER TABLE products ADD COLUMN user_id INTEGER"))
+
+
+
+def get_or_create_legacy_user():
+    legacy_user = User.query.filter_by(username="legacy").first()
+    if legacy_user is None:
+        legacy_user = User(
+            username="legacy",
+            password_hash=generate_password_hash("legacy-internal-account"),
+        )
+        db.session.add(legacy_user)
+        db.session.commit()
+
+    return legacy_user
+
+
+
+def migrate_legacy_products_to_user(user):
+    legacy_user = get_or_create_legacy_user()
+    if legacy_user.id == user.id:
+        return
+
+    legacy_products = Product.query.filter_by(user_id=legacy_user.id).all()
+    if legacy_products and Product.query.filter_by(user_id=user.id).count() == 0:
+        for product in legacy_products:
+            product.user_id = user.id
+        db.session.commit()
+
+
+
+def get_current_user():
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+    return User.query.get(user_id)
+
+
+@app.before_request
+def require_authentication():
+    allowed_routes = {"login", "register", "static"}
+    if request.endpoint in allowed_routes:
+        return None
+
+    if not get_current_user():
+        return redirect(url_for("login"))
+
+
 with app.app_context():
     db.create_all()
+    ensure_products_user_column()
+    legacy_user = get_or_create_legacy_user()
+    Product.query.filter(Product.user_id.is_(None)).update({"user_id": legacy_user.id})
+    db.session.commit()
 
 
 # HELPERS
@@ -73,7 +143,7 @@ def get_group_products(product):
     key = product_group_key(product)
     products = [
         candidate
-        for candidate in Product.query.all()
+        for candidate in Product.query.filter_by(user_id=product.user_id).all()
         if product_group_key(candidate) == key
     ]
     return sorted(products, key=size_sort_key)
@@ -201,9 +271,13 @@ def update_all_prices():
 
 @app.route("/")
 def index():
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for("login"))
+
     search = request.args.get("search", "").strip()
 
-    query = Product.query
+    query = Product.query.filter_by(user_id=current_user.id)
     if search:
         query = query.filter(Product.name.ilike(f"%{search}%"))
 
@@ -332,26 +406,31 @@ def index():
 
 @app.route("/add", methods=["POST"])
 def add_product():
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for("login"))
+
     url = request.form.get("url")
     if not url:
         return redirect(url_for("index"))
 
     clean_url = url.strip().rstrip("/") + "/"
 
-    exists = Product.query.filter_by(url=clean_url).first()
+    exists = Product.query.filter_by(user_id=current_user.id, url=clean_url).first()
 
     if not exists:
         product = Product(
+            user_id=current_user.id,
             name="Új termék (Feldolgozás alatt...)",
             brand=None,
             concentration=None,
             size="Mérés alatt",
-            image_url="https://via.placeholder.com/150", 
+            image_url="https://via.placeholder.com/150",
             url=clean_url,
             in_stock=True,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
-        
+
         try:
             db.session.add(product)
             db.session.commit()
@@ -366,7 +445,11 @@ def add_product():
 
 @app.route("/delete/<int:product_id>", methods=["POST"])
 def delete_product(product_id):
-    product = Product.query.get_or_404(product_id)
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for("login"))
+
+    product = Product.query.filter_by(user_id=current_user.id, id=product_id).first_or_404()
 
     PriceHistory.query.filter_by(product_id=product.id).delete()
 
@@ -378,7 +461,11 @@ def delete_product(product_id):
 
 @app.route("/delete-group/<int:product_id>", methods=["POST"])
 def delete_product_group(product_id):
-    product = Product.query.get_or_404(product_id)
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for("login"))
+
+    product = Product.query.filter_by(user_id=current_user.id, id=product_id).first_or_404()
     variants = get_group_products(product)
 
     for variant in variants:
@@ -395,7 +482,11 @@ def delete_product_group(product_id):
 
 @app.route("/product-group/<int:product_id>")
 def product_group_detail(product_id):
-    product = Product.query.get_or_404(product_id)
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for("login"))
+
+    product = Product.query.filter_by(user_id=current_user.id, id=product_id).first_or_404()
     variants = get_group_products(product)
     chart_data = build_chart_data(variants)
 
@@ -432,7 +523,11 @@ def product_group_detail(product_id):
 
 @app.route("/product/<int:product_id>")
 def product_detail(product_id):
-    product = Product.query.get_or_404(product_id)
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for("login"))
+
+    product = Product.query.filter_by(user_id=current_user.id, id=product_id).first_or_404()
     variants = get_group_products(product)
     chart_data = build_chart_data([product])
     prices = chart_data["prices"]
@@ -490,6 +585,10 @@ def product_detail(product_id):
 
 @app.route("/stats")
 def stats():
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for("login"))
+
     periods = {
         "Hónap": 30,
         "Negyedév": 90,
@@ -506,7 +605,7 @@ def stats():
         changes = []
         activity = []
 
-        for product in Product.query.all():
+        for product in Product.query.filter_by(user_id=current_user.id).all():
             history = (
                 PriceHistory.query.filter_by(product_id=product.id)
                 .filter(PriceHistory.checked_at >= cutoff)
@@ -578,6 +677,59 @@ def stats():
         "stats.html",
         stats=stats,
     )
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password_hash, password):
+            session["user_id"] = user.id
+            migrate_legacy_products_to_user(user)
+            return redirect(url_for("index"))
+
+        flash("Hibás felhasználónév vagy jelszó.")
+
+    return render_template("login.html")
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        if not username or not password:
+            flash("A felhasználónév és a jelszó megadása kötelező.")
+            return render_template("register.html")
+
+        existing = User.query.filter_by(username=username).first()
+        if existing:
+            flash("Ez a felhasználónév már foglalt.")
+            return render_template("register.html")
+
+        user = User(
+            username=username,
+            password_hash=generate_password_hash(password),
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        migrate_legacy_products_to_user(user)
+        session["user_id"] = user.id
+        flash("Sikeres regisztráció.")
+        return redirect(url_for("index"))
+
+    return render_template("register.html")
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.pop("user_id", None)
+    return redirect(url_for("login"))
 
 
 # RUN

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-shell">
+    <div class="auth-card">
+        <h1>Bejelentkezés</h1>
+        <p class="auth-subtitle">Jelentkezz be a saját figyelő listádhoz.</p>
+        <form method="POST" action="{{ url_for('login') }}" class="form auth-form">
+            <input type="text" name="username" placeholder="Felhasználónév" required>
+            <input type="password" name="password" placeholder="Jelszó" required>
+            <button type="submit">Bejelentkezés</button>
+        </form>
+
+        <p class="auth-link-row">
+            Nincs fiókod?
+            <a href="{{ url_for('register') }}">Regisztráció</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
