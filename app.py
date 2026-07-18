@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from datetime import datetime
 from datetime import timedelta
 import re
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, text, func
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from models import db, Product, PriceHistory, User
@@ -60,6 +60,33 @@ def migrate_legacy_products_to_user(user):
 
 
 
+def restore_legacy_watchlist():
+    legacy_user = get_or_create_legacy_user()
+
+    non_legacy_user = (
+        db.session.query(User.id)
+        .outerjoin(Product, Product.user_id == User.id)
+        .filter(User.id != legacy_user.id)
+        .group_by(User.id)
+        .order_by(func.count(Product.id).desc())
+        .first()
+    )
+
+    if not non_legacy_user:
+        return
+
+    source_user_id = non_legacy_user[0]
+    source_count = Product.query.filter_by(user_id=source_user_id).count()
+    legacy_count = Product.query.filter_by(user_id=legacy_user.id).count()
+
+    if source_count <= legacy_count:
+        return
+
+    Product.query.filter_by(user_id=source_user_id).update({"user_id": legacy_user.id})
+    db.session.commit()
+
+
+
 def get_current_user():
     user_id = session.get("user_id")
     if not user_id:
@@ -83,6 +110,7 @@ with app.app_context():
     legacy_user = get_or_create_legacy_user()
     Product.query.filter(Product.user_id.is_(None)).update({"user_id": legacy_user.id})
     db.session.commit()
+    restore_legacy_watchlist()
 
 
 # HELPERS
@@ -688,7 +716,6 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password_hash, password):
             session["user_id"] = user.id
-            migrate_legacy_products_to_user(user)
             return redirect(url_for("index"))
 
         flash("Hibás felhasználónév vagy jelszó.")
@@ -718,7 +745,6 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        migrate_legacy_products_to_user(user)
         session["user_id"] = user.id
         flash("Sikeres regisztráció.")
         return redirect(url_for("index"))
