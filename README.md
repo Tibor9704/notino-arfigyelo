@@ -1,33 +1,55 @@
 # Perfume Price Tracker
 
-Web application built with Flask that tracks perfume prices from Notino and stores historical price data for analysis.
+A Flask-based perfume price tracker that monitors Notino product links, stores historical price data, and now supports per-user watchlists.
 
-## Features
+## What it does
 
 * Add perfumes by product URL
 * Automatically imports all available size variants
-* Stores price history in SQLite
+* Stores historical prices for each tracked product
 * Detects price increases and decreases
 * Highlights significant discounts
 * Tracks restocks
-* View historical price charts
-* Compare price history across different bottle sizes
-* Search products by name
-* Statistics dashboard:
+* Shows product history charts
+* Lets each logged-in user view only their own tracked products
+* Includes a simple built-in login/register flow
+* Supports deployment to Render with PostgreSQL on Supabase
 
-  * Most frequently changing products
-  * Biggest price increases
-  * Biggest price drops
-  * Monthly, quarterly, semi-annual and yearly summaries
+## Current architecture
 
-## Tech Stack
+* Flask app for the web UI and request handling
+* SQLAlchemy ORM for persistence
+* PostgreSQL-compatible database support via `DATABASE_URL`
+* Render-ready Gunicorn startup
+* Built-in user account system with session-based authentication
+* Legacy watchlist compatibility preserved through a `legacy` internal user
+
+## Deployment notes
+
+For online deployment, set these environment variables on Render:
+
+* `DATABASE_URL` — Supabase Postgres connection string
+* `SECRET_KEY` — a secure random secret
+
+The app is ready to run with:
+
+```bash
+gunicorn app:app
+```
+
+## Tech stack
 
 * Python
 * Flask
-* SQLAlchemy
-* SQLite
+* Flask-SQLAlchemy
+* PostgreSQL / SQLite compatible configuration
 * Jinja2
 * Chart.js
+* Gunicorn
+
+## Notes
+
+This project is intended for educational and personal use, and is now structured for per-user watchlists in a hosted deployment setup.
 
 ## License
 

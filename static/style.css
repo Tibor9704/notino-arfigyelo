@@ -81,6 +81,12 @@ body {
   letter-spacing: -0.03em;
 }
 
+.nav-link.brand-link {
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .brand-link:hover {
   background: transparent !important;
   color: var(--ink) !important;
