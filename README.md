@@ -2,6 +2,10 @@
 
 A Flask-based perfume price tracker that monitors Notino product links, stores historical price data, and now supports per-user watchlists.
 
+Test User: 
+username: proba
+password: proba
+
 ## What it does
 
 * Add perfumes by product URL
