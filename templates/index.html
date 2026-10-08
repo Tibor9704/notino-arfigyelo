@@ -25,6 +25,7 @@
 
         <form action="/delete-group/{{ product.id }}" method="POST" class="delete-form"
               onclick="event.stopPropagation()">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button type="submit" aria-label="Kártya törlése">x</button>
         </form> 
 
@@ -189,6 +190,7 @@
     <h2>Parfüm hozzáadása</h2>
 
     <form method="POST" action="/add" class="form bottom-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="url" name="url" placeholder="Notino URL" required />
         <button type="submit">Hozzáadás</button>
     </form>

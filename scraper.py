@@ -2,6 +2,7 @@ import json
 import re
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse
 
 HEADERS = {
     "User-Agent": (
@@ -16,9 +17,43 @@ def clean_price(value):
     return int(cleaned) if cleaned else None
 
 
+def is_allowed_notino_url(url):
+    try:
+        parsed = urlparse(url)
+        return (
+            parsed.scheme == "https"
+            and parsed.hostname in {"notino.hu", "www.notino.hu"}
+            and parsed.port in (None, 443)
+            and parsed.username is None
+            and parsed.password is None
+        )
+    except (TypeError, ValueError):
+        return False
+
+
 def scrape_product(url):
     try:
-        response = requests.get(url, headers=HEADERS, timeout=15)
+        if not is_allowed_notino_url(url):
+            print("Rejected non-Notino URL")
+            return None
+
+        response = None
+        for _ in range(6):
+            response = requests.get(
+                url, headers=HEADERS, timeout=15, allow_redirects=False
+            )
+            if response.status_code not in (301, 302, 303, 307, 308):
+                break
+            location = response.headers.get("Location")
+            if not location:
+                return None
+            url = urljoin(url, location)
+            if not is_allowed_notino_url(url):
+                print("Rejected redirect outside Notino")
+                return None
+        else:
+            print("Too many Notino redirects")
+            return None
 
         if response.status_code != 200:
             print("Bad status:", response.status_code)

@@ -39,6 +39,7 @@
             <div class="nav-user-block">
                 <span class="nav-user">{{ current_user.username if current_user else 'Fiók' }}</span>
                 <form method="POST" action="{{ url_for('logout') }}" class="logout-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <button type="submit" class="nav-link nav-logout">Kilépés</button>
                 </form>
             </div>

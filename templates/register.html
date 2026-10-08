@@ -5,6 +5,7 @@
         <h1>Regisztráció</h1>
         <p class="auth-subtitle">Hozz létre saját fiókot, és külön listát tarts fenn.</p>
         <form method="POST" action="{{ url_for('register') }}" class="form auth-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="text" name="username" placeholder="Felhasználónév" required>
             <input type="password" name="password" placeholder="Jelszó" required>
             <button type="submit">Fiók létrehozása</button>

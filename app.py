@@ -1,23 +1,33 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
 from datetime import datetime
 from datetime import timedelta
 import re
-from sqlalchemy import inspect, text, func
+from sqlalchemy import inspect, text
 from werkzeug.security import generate_password_hash, check_password_hash
+import hmac
+import secrets
 from config import Config
 from models import db, Product, PriceHistory, User
-from scraper import scrape_product
+from scraper import is_allowed_notino_url, scrape_product
 
 app = Flask(__name__)
 app.config.from_object(Config)
 app.secret_key = Config.SECRET_KEY
+
+
+def get_csrf_token():
+    token = session.get("csrf_token")
+    if token is None:
+        token = secrets.token_urlsafe(32)
+        session["csrf_token"] = token
+    return token
 
 db.init_app(app)
 
 
 @app.context_processor
 def inject_current_user():
-    return {"current_user": get_current_user()}
+    return {"current_user": get_current_user(), "csrf_token": get_csrf_token()}
 
 
 def ensure_products_user_column():
@@ -47,46 +57,6 @@ def get_or_create_legacy_user():
 
 
 
-def migrate_legacy_products_to_user(user):
-    legacy_user = get_or_create_legacy_user()
-    if legacy_user.id == user.id:
-        return
-
-    legacy_products = Product.query.filter_by(user_id=legacy_user.id).all()
-    if legacy_products and Product.query.filter_by(user_id=user.id).count() == 0:
-        for product in legacy_products:
-            product.user_id = user.id
-        db.session.commit()
-
-
-
-def restore_legacy_watchlist():
-    legacy_user = get_or_create_legacy_user()
-
-    non_legacy_user = (
-        db.session.query(User.id)
-        .outerjoin(Product, Product.user_id == User.id)
-        .filter(User.id != legacy_user.id)
-        .group_by(User.id)
-        .order_by(func.count(Product.id).desc())
-        .first()
-    )
-
-    if not non_legacy_user:
-        return
-
-    source_user_id = non_legacy_user[0]
-    source_count = Product.query.filter_by(user_id=source_user_id).count()
-    legacy_count = Product.query.filter_by(user_id=legacy_user.id).count()
-
-    if source_count <= legacy_count:
-        return
-
-    Product.query.filter_by(user_id=source_user_id).update({"user_id": legacy_user.id})
-    db.session.commit()
-
-
-
 def get_current_user():
     user_id = session.get("user_id")
     if not user_id:
@@ -96,6 +66,12 @@ def get_current_user():
 
 @app.before_request
 def require_authentication():
+    if request.method == "POST":
+        submitted_token = request.form.get("csrf_token", "")
+        expected_token = session.get("csrf_token", "")
+        if not expected_token or not hmac.compare_digest(submitted_token, expected_token):
+            abort(400, description="Invalid or missing CSRF token")
+
     allowed_routes = {"login", "register", "static"}
     if request.endpoint in allowed_routes:
         return None
@@ -110,7 +86,6 @@ with app.app_context():
     legacy_user = get_or_create_legacy_user()
     Product.query.filter(Product.user_id.is_(None)).update({"user_id": legacy_user.id})
     db.session.commit()
-    restore_legacy_watchlist()
 
 
 # HELPERS
@@ -442,7 +417,12 @@ def add_product():
     if not url:
         return redirect(url_for("index"))
 
-    clean_url = url.strip().rstrip("/") + "/"
+    clean_url = url.strip()
+    if not is_allowed_notino_url(clean_url):
+        flash("Csak HTTPS-es Notino.hu termékoldal adható hozzá.")
+        return redirect(url_for("index"))
+
+    clean_url = clean_url.rstrip("/") + "/"
 
     exists = Product.query.filter_by(user_id=current_user.id, url=clean_url).first()
 
@@ -715,6 +695,7 @@ def login():
 
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password_hash, password):
+            session.clear()
             session["user_id"] = user.id
             return redirect(url_for("index"))
 
@@ -745,6 +726,7 @@ def register():
         db.session.add(user)
         db.session.commit()
 
+        session.clear()
         session["user_id"] = user.id
         flash("Sikeres regisztráció.")
         return redirect(url_for("index"))
@@ -762,4 +744,6 @@ def logout():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    import os
+
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1")

@@ -17,5 +17,9 @@ class Config:
     if "?pgbouncer=true" in SQLALCHEMY_DATABASE_URI:
         SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("?pgbouncer=true", "")
 
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
+    SECRET_KEY = os.environ.get("SECRET_KEY")
+    if not SECRET_KEY:
+        if os.environ.get("APP_ENV", "").lower() == "production":
+            raise RuntimeError("SECRET_KEY must be set in production")
+        SECRET_KEY = "development-only-key-change-before-deploying"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
