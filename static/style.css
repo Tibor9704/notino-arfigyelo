@@ -1442,3 +1442,116 @@ h1 {
     font-size: 13px;
   }
 }
+
+/* Consistent product cards: keep the normal grid aligned and allow the
+   expandable variant list to grow over neighboring cards on hover. */
+.products {
+  align-items: stretch;
+}
+
+.card-wrapper {
+  height: 468px;
+  min-height: 468px;
+}
+
+.card {
+  height: 468px;
+  min-height: 468px;
+  max-height: 468px;
+}
+
+.card-wrapper:hover .card {
+  height: auto;
+  max-height: 660px;
+}
+
+.card-content.default-view {
+  min-height: 468px;
+  padding: 22px 18px 18px;
+}
+
+.card h2 {
+  width: 100%;
+  min-height: 0;
+  height: 3.75em;
+  margin: 8px 0 6px;
+  padding: 0 10px;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  width: 100%;
+  min-height: 36px;
+  max-height: 36px;
+  line-height: 1.4;
+  overflow: hidden;
+}
+
+.card-product-image {
+  height: 142px;
+  margin: 4px 0 8px;
+}
+
+.card-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.variant-list {
+  min-height: 92px;
+  margin-top: 6px;
+}
+
+.deal-badge {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+@media (max-width: 700px) {
+  .card-wrapper,
+  .card,
+  .card-content.default-view {
+    height: 400px;
+    min-height: 400px;
+  }
+
+  .card {
+    max-height: 400px;
+  }
+
+  .card-wrapper:hover .card {
+    height: auto;
+    max-height: 580px;
+  }
+
+  .card-content.default-view {
+    padding: 16px 12px 12px;
+  }
+
+  .card h2 {
+    height: 3.6em;
+    padding: 0 6px;
+    font-size: 15px;
+  }
+
+  .meta {
+    min-height: 32px;
+    max-height: 32px;
+    font-size: 11px;
+  }
+
+  .card-product-image {
+    height: 100px;
+    margin: 4px 0;
+  }
+
+  .variant-list {
+    min-height: 72px;
+  }
+}
