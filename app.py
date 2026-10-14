@@ -6,6 +6,7 @@ from sqlalchemy import inspect, text
 from werkzeug.security import generate_password_hash, check_password_hash
 import hmac
 import secrets
+import click
 from config import Config
 from models import db, Product, PriceHistory, User
 from scraper import is_allowed_notino_url, scrape_product
@@ -13,6 +14,7 @@ from scraper import is_allowed_notino_url, scrape_product
 app = Flask(__name__)
 app.config.from_object(Config)
 app.secret_key = Config.SECRET_KEY
+LEGACY_USERNAME = "legacy"
 
 
 def get_csrf_token():
@@ -44,11 +46,11 @@ def ensure_products_user_column():
 
 
 def get_or_create_legacy_user():
-    legacy_user = User.query.filter_by(username="legacy").first()
+    legacy_user = User.query.filter_by(username=LEGACY_USERNAME).first()
     if legacy_user is None:
         legacy_user = User(
-            username="legacy",
-            password_hash=generate_password_hash("legacy-internal-account"),
+            username=LEGACY_USERNAME,
+            password_hash=generate_password_hash(secrets.token_urlsafe(32)),
         )
         db.session.add(legacy_user)
         db.session.commit()
@@ -61,7 +63,10 @@ def get_current_user():
     user_id = session.get("user_id")
     if not user_id:
         return None
-    return User.query.get(user_id)
+    user = User.query.get(user_id)
+    if user and user.username == LEGACY_USERNAME:
+        return None
+    return user
 
 
 @app.before_request
@@ -86,6 +91,46 @@ with app.app_context():
     legacy_user = get_or_create_legacy_user()
     Product.query.filter(Product.user_id.is_(None)).update({"user_id": legacy_user.id})
     db.session.commit()
+
+
+@app.cli.command("claim-legacy-products")
+@click.option("--username", required=True, help="The registered account to receive the legacy products.")
+def claim_legacy_products(username):
+    """Move legacy watchlist products to a registered account."""
+    target_user = User.query.filter_by(username=username.strip()).first()
+    if target_user is None:
+        raise click.ClickException(f"No account found for username '{username}'. Register first.")
+    if target_user.username == LEGACY_USERNAME:
+        raise click.ClickException("The legacy account cannot claim its own products.")
+
+    legacy_user = User.query.filter_by(username=LEGACY_USERNAME).first()
+    if legacy_user is None:
+        raise click.ClickException("The legacy account does not exist.")
+
+    legacy_products = Product.query.filter_by(user_id=legacy_user.id).all()
+    if not legacy_products:
+        click.echo("There are no legacy products to transfer.")
+        return
+
+    target_urls = {
+        url
+        for (url,) in db.session.query(Product.url).filter_by(user_id=target_user.id).all()
+    }
+    duplicate_urls = [
+        product.url for product in legacy_products if product.url in target_urls
+    ]
+    if duplicate_urls:
+        raise click.ClickException(
+            "Transfer stopped: the target account already tracks one or more legacy products. "
+            "Remove duplicate URLs from one account before retrying."
+        )
+
+    for product in legacy_products:
+        product.user_id = target_user.id
+    db.session.commit()
+    click.echo(
+        f"Transferred {len(legacy_products)} legacy product(s) to '{target_user.username}'."
+    )
 
 
 # HELPERS
@@ -694,7 +739,11 @@ def login():
         password = request.form.get("password", "")
 
         user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password_hash, password):
+        if (
+            user
+            and user.username != LEGACY_USERNAME
+            and check_password_hash(user.password_hash, password)
+        ):
             session.clear()
             session["user_id"] = user.id
             return redirect(url_for("index"))

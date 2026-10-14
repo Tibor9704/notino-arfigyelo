@@ -2,9 +2,11 @@
 
 A Flask-based perfume price tracker that monitors Notino product links, stores historical price data, and now supports per-user watchlists.
 
-Test User: 
-username: proba
-password: proba
+Create a personal account through the registration page. There is no shared default login.
+If you have products from the old legacy watchlist, register your account first, then run
+`flask --app app claim-legacy-products --username YOUR_USERNAME` from the project directory
+to move them to your account. The command aborts without changing anything if it finds
+duplicate product URLs in the target account.
 
 ## What it does
 
@@ -26,7 +28,7 @@ password: proba
 * PostgreSQL-compatible database support via `DATABASE_URL`
 * Render-ready Gunicorn startup
 * Built-in user account system with session-based authentication
-* Legacy watchlist compatibility preserved through a `legacy` internal user
+* Legacy watchlist compatibility preserved through a non-login `legacy` internal user
 
 ## Deployment notes
 
