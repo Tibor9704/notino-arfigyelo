@@ -1455,13 +1455,12 @@ h1 {
 }
 
 .card {
-  height: 468px;
+  height: auto;
   min-height: 468px;
   max-height: 468px;
 }
 
 .card-wrapper:hover .card {
-  height: auto;
   max-height: 660px;
 }
 
@@ -1515,22 +1514,24 @@ h1 {
 
 @media (max-width: 700px) {
   .card-wrapper,
-  .card,
   .card-content.default-view {
     height: 400px;
     min-height: 400px;
   }
 
   .card {
+    height: auto;
+    min-height: 400px;
     max-height: 400px;
   }
 
   .card-wrapper:hover .card {
-    height: auto;
     max-height: 580px;
   }
 
   .card-content.default-view {
+    height: auto;
+    min-height: 400px;
     padding: 16px 12px 12px;
   }
 
