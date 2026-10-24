@@ -369,16 +369,27 @@ def index():
             if (effective_brands[product.id] or "").casefold() == brand_filter.casefold()
         ]
 
+    history_by_product = {}
+    product_ids = [product.id for product in products]
+    if product_ids:
+        history_rows = (
+            PriceHistory.query.filter(PriceHistory.product_id.in_(product_ids))
+            .order_by(
+                PriceHistory.product_id.asc(),
+                PriceHistory.checked_at.desc(),
+                PriceHistory.id.desc(),
+            )
+            .all()
+        )
+        for history_row in history_rows:
+            history_by_product.setdefault(history_row.product_id, []).append(history_row)
+
     latest_prices = {}
     lowest_prices = {}
     enriched = []
 
     for product in products:
-        history = (
-            PriceHistory.query.filter_by(product_id=product.id)
-            .order_by(PriceHistory.checked_at.desc())
-            .all()
-        )
+        history = history_by_product.get(product.id, [])
 
         latest = history[0] if history else None
         previous = None
@@ -478,6 +489,14 @@ def index():
         key=lambda x: (not x["is_best_deal"], not x["restocked_at"], x["change_amount"])
     )
 
+    total_groups = len(grouped_enriched)
+    per_page = 12
+    total_pages = max(1, (total_groups + per_page - 1) // per_page)
+    page = request.args.get("page", 1, type=int) or 1
+    page = min(max(page, 1), total_pages)
+    start = (page - 1) * per_page
+    grouped_enriched = grouped_enriched[start:start + per_page]
+
     return render_template(
         "index.html",
         grouped_enriched=grouped_enriched,
@@ -486,6 +505,9 @@ def index():
         search=search,
         brands=brands,
         brand_filter=brand_filter,
+        total_groups=total_groups,
+        page=page,
+        total_pages=total_pages,
     )
 
 

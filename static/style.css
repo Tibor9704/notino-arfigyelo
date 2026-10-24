@@ -1633,3 +1633,7 @@ h1 {
   .brand-filter-link { flex: 0 0 auto; white-space: nowrap; }
   .product-list-main .products { grid-template-columns: minmax(0, 1fr); }
 }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 24px 0 8px; color: var(--muted); font-size: 13px; font-weight: 700; }
+.pagination a { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: var(--shadow-sm); transition: border-color 0.18s ease, color 0.18s ease; }
+.pagination a:hover { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 480px) { .pagination { gap: 10px; margin-top: 18px; } .pagination a { min-height: 42px; padding: 8px 12px; } }

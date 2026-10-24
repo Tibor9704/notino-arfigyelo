@@ -6,7 +6,7 @@
         <h1>Kedvenc illataid</h1>
     </div>
     <div class="header-summary">
-        <strong>{{ grouped_enriched|length }}</strong>
+        <strong>{{ total_groups }}</strong>
         <span>figyelt illat</span>
     </div>
 </div>
@@ -196,6 +196,17 @@
         <div class="empty-list">Nincs megjeleníthető termék ezen a márkán.</div>
         {% endif %}
         </div>
+        {% if total_pages > 1 %}
+        <nav class="pagination" aria-label="Lapozás">
+            {% if page > 1 %}
+            <a href="{{ url_for('index', search=search or none, brand=brand_filter or none, page=page - 1) }}">‹ Előző</a>
+            {% endif %}
+            <span>{{ page }} / {{ total_pages }}</span>
+            {% if page < total_pages %}
+            <a href="{{ url_for('index', search=search or none, brand=brand_filter or none, page=page + 1) }}">Következő ›</a>
+            {% endif %}
+        </nav>
+        {% endif %}
     </main>
 </div>
 
