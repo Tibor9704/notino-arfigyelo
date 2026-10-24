@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
 from datetime import datetime
 from datetime import timedelta
+from bisect import bisect_left
 import re
 from sqlalchemy import inspect, text
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -87,6 +88,11 @@ def require_authentication():
 
 with app.app_context():
     db.create_all()
+    history_index = next(
+        index for index in PriceHistory.__table__.indexes
+        if index.name == "ix_price_history_product_checked"
+    )
+    history_index.create(bind=db.engine, checkfirst=True)
     ensure_products_user_column()
     legacy_user = get_or_create_legacy_user()
     Product.query.filter(Product.user_id.is_(None)).update({"user_id": legacy_user.id})
@@ -688,88 +694,95 @@ def stats():
         "Fél év": 180,
         "Év": 365,
     }
+    now = datetime.utcnow()
+    cutoffs = {
+        label: now - timedelta(days=days)
+        for label, days in periods.items()
+    }
+    oldest_cutoff = min(cutoffs.values())
+
+    products = Product.query.filter_by(user_id=current_user.id).all()
+    products_by_id = {product.id: product for product in products}
+    histories_by_product = {}
+
+    if products_by_id:
+        history_rows = (
+            db.session.query(
+                PriceHistory.product_id,
+                PriceHistory.checked_at,
+                PriceHistory.price,
+            )
+            .join(Product, Product.id == PriceHistory.product_id)
+            .filter(
+                Product.user_id == current_user.id,
+                PriceHistory.checked_at >= oldest_cutoff,
+            )
+            .order_by(
+                PriceHistory.product_id.asc(),
+                PriceHistory.checked_at.asc(),
+                PriceHistory.id.asc(),
+            )
+            .all()
+        )
+        for product_id, checked_at, price in history_rows:
+            histories_by_product.setdefault(product_id, []).append((checked_at, price))
+
+    period_results = {
+        label: {"activity": [], "changes": []}
+        for label in periods
+    }
+
+    for product_id, product in products_by_id.items():
+        history = histories_by_product.get(product_id, [])
+        if len(history) < 2:
+            continue
+
+        timestamps = [checked_at for checked_at, _ in history]
+        for label, cutoff in cutoffs.items():
+            start = bisect_left(timestamps, cutoff)
+            period_history = history[start:]
+            if len(period_history) < 2:
+                continue
+
+            prices = [price for _, price in period_history]
+            change_count = sum(
+                previous != current
+                for previous, current in zip(prices, prices[1:])
+            )
+            period_results[label]["activity"].append(
+                {"name": product.name, "size": product.size, "count": change_count}
+            )
+
+            first_price, latest_price = prices[0], prices[-1]
+            if first_price is not None and latest_price is not None:
+                period_results[label]["changes"].append(
+                    {
+                        "name": product.name,
+                        "size": product.size,
+                        "change": latest_price - first_price,
+                    }
+                )
 
     stats = {}
-    now = datetime.utcnow()
-
-    for label, days in periods.items():
-        cutoff = now - timedelta(days=days)
-
-        changes = []
-        activity = []
-
-        for product in Product.query.filter_by(user_id=current_user.id).all():
-            history = (
-                PriceHistory.query.filter_by(product_id=product.id)
-                .filter(PriceHistory.checked_at >= cutoff)
-                .order_by(PriceHistory.checked_at.asc())
-                .all()
-            )
-
-            if len(history) < 2:
-                continue
-
-            # ----- ármódosítások száma -----
-
-            change_count = 0
-
-            for i in range(1, len(history)):
-                if history[i].price != history[i - 1].price:
-                    change_count += 1
-
-            activity.append(
-                {
-                    "name": product.name,
-                    "size": product.size,
-                    "count": change_count,
-                }
-            )
-
-            # ----- drágulás / áresés -----
-
-            first_price = history[0].price
-            latest_price = history[-1].price
-
-            if first_price is None or latest_price is None:
-                continue
-
-            diff = latest_price - first_price
-
-            changes.append(
-                {
-                    "name": product.name,
-                    "size": product.size,
-                    "change": diff,
-                }
-            )
-
-        most_active = sorted(
-            activity,
-            key=lambda x: x["count"],
-            reverse=True,
+    for label, result in period_results.items():
+        activity = sorted(
+            result["activity"], key=lambda item: item["count"], reverse=True
         )[:5]
-
-        biggest_up = sorted(
-            [c for c in changes if c["change"] > 0],
-            key=lambda x: x["change"],
-            reverse=True,
-        )[:5]
-
-        biggest_down = sorted(
-            [c for c in changes if c["change"] < 0],
-            key=lambda x: x["change"],
-        )[:5]
-
+        changes = result["changes"]
         stats[label] = {
-            "top5": most_active,
-            "up": biggest_up,
-            "down": biggest_down,
+            "top5": activity,
+            "up": sorted(
+                (item for item in changes if item["change"] > 0),
+                key=lambda item: item["change"],
+                reverse=True,
+            )[:5],
+            "down": sorted(
+                (item for item in changes if item["change"] < 0),
+                key=lambda item: item["change"],
+            )[:5],
         }
 
-    return render_template(
-        "stats.html",
-        stats=stats,
-    )
+    return render_template("stats.html", stats=stats)
 
 
 @app.route("/login", methods=["GET", "POST"])

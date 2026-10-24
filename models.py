@@ -48,6 +48,9 @@ class Product(db.Model):
 
 class PriceHistory(db.Model):
     __tablename__ = "price_history"
+    __table_args__ = (
+        db.Index("ix_price_history_product_checked", "product_id", "checked_at"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     product_id = db.Column(db.Integer, db.ForeignKey("products.id"))
