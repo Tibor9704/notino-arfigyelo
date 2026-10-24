@@ -33,7 +33,9 @@
 
             <div class="nav-tools">
                 <a href="/stats" class="nav-link nav-icon">📈</a>
+                {% if request.endpoint == "index" %}
                 <a href="#add-form" class="nav-link nav-action">+</a>
+                {% endif %}
             </div>
 
             <div class="nav-user-block">

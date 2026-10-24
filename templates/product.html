@@ -92,14 +92,14 @@
 </div>
 {% endif %}
 
-<div class="chart-filters">
-    <button onclick="updateChart(7)">7 nap</button>
-    <button onclick="updateChart(30)">30 nap</button>
-    <button onclick="updateChart('all')">Összes</button>
+<div class="chart-filters" role="group" aria-label="Grafikon időszaka">
+    <button type="button" data-period="7" aria-pressed="false" onclick="updateChart(7)">7 nap</button>
+    <button type="button" data-period="30" aria-pressed="false" onclick="updateChart(30)">30 nap</button>
+    <button type="button" data-period="all" aria-pressed="true" class="active" onclick="updateChart('all')">Összes</button>
 </div>
 
 {% if chart_data.prices %}
-    <canvas id="priceChart"></canvas>
+    <section class="chart-card" aria-label="Ártörténeti grafikon"><div class="chart-canvas-wrap"><canvas id="priceChart"></canvas></div></section>
 
     <script id="chart-data" type="application/json">
     {{ chart_data|tojson }}
