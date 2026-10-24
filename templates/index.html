@@ -11,7 +11,18 @@
     </div>
 </div>
 
-<div class="products">
+<div class="product-list-layout">
+    <aside class="brand-filter" aria-label="Márka szerinti szűrés">
+        <h2>Márkák</h2>
+        <nav class="brand-filter-options">
+            <a class="brand-filter-link {% if not brand_filter %}active{% endif %}" href="{{ url_for('index', search=search or none) }}">Összes márka</a>
+            {% for brand in brands %}
+            <a class="brand-filter-link {% if brand_filter|lower == brand|lower %}active{% endif %}" href="{{ url_for('index', search=search or none, brand=brand) }}">{{ brand }}</a>
+            {% endfor %}
+        </nav>
+    </aside>
+    <main class="product-list-main">
+        <div class="products">
 
 {% for group in grouped_enriched %}
 {% set product = group.product %}
@@ -181,6 +192,11 @@
 
 {% endfor %}
 
+        {% if not grouped_enriched %}
+        <div class="empty-list">Nincs megjeleníthető termék ezen a márkán.</div>
+        {% endif %}
+        </div>
+    </main>
 </div>
 
 <hr class="divider">

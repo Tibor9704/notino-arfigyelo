@@ -12,7 +12,7 @@
 </div>
 
 <p class="product-subtitle">
-    {{ product.brand }}
+    {{ product_brand or "" }}
     {% if product.concentration %} • {{ product.concentration }}{% endif %}
     {% if not is_group and product.size %} • {{ product.size }}{% endif %}
 </p>

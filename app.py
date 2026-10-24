@@ -187,6 +187,26 @@ def size_sort_key(product):
     return (int(digits) if digits else 999999, product.size or "")
 
 
+def get_user_brand_names(user_id):
+    brand_map = {}
+    for product in Product.query.filter_by(user_id=user_id).all():
+        brand = (product.brand or "").strip()
+        if brand:
+            brand_map.setdefault(brand.casefold(), brand)
+    return sorted(brand_map.values(), key=lambda brand: (-len(brand), brand.casefold()))
+
+
+def infer_brand_from_name(name, brand_names):
+    normalized_name = (name or "").strip().casefold()
+    for brand in brand_names:
+        normalized_brand = brand.strip().casefold()
+        if normalized_name.startswith(normalized_brand) and (
+            len(normalized_name) == len(normalized_brand)
+            or not normalized_name[len(normalized_brand)].isalnum()
+        ):
+            return brand
+    return None
+
 def get_group_products(product):
     key = product_group_key(product)
     products = [
@@ -330,6 +350,18 @@ def index():
         query = query.filter(Product.name.ilike(f"%{search}%"))
 
     products = query.all()
+    brand_match_names = get_user_brand_names(current_user.id)
+    brands = sorted(brand_match_names, key=str.casefold)
+    brand_filter = request.args.get("brand", "").strip()
+    effective_brands = {
+        product.id: (product.brand or "").strip() or infer_brand_from_name(product.name, brand_match_names)
+        for product in products
+    }
+    if brand_filter:
+        products = [
+            product for product in products
+            if (effective_brands[product.id] or "").casefold() == brand_filter.casefold()
+        ]
 
     latest_prices = {}
     lowest_prices = {}
@@ -446,6 +478,8 @@ def index():
         latest_prices=latest_prices,
         lowest_prices=lowest_prices,
         search=search,
+        brands=brands,
+        brand_filter=brand_filter,
     )
 
 
@@ -542,6 +576,8 @@ def product_group_detail(product_id):
     product = Product.query.filter_by(user_id=current_user.id, id=product_id).first_or_404()
     variants = get_group_products(product)
     chart_data = build_chart_data(variants)
+    brand_names = get_user_brand_names(current_user.id)
+    product_brand = (product.brand or "").strip() or infer_brand_from_name(product.name, brand_names)
 
     ml_prices = []
 
@@ -566,6 +602,7 @@ def product_group_detail(product_id):
     return render_template(
         "product.html",
         product=product,
+        product_brand=product_brand,
         variants=variants,
         chart_data=chart_data,
         active_product_id=None,
@@ -583,6 +620,8 @@ def product_detail(product_id):
     product = Product.query.filter_by(user_id=current_user.id, id=product_id).first_or_404()
     variants = get_group_products(product)
     chart_data = build_chart_data([product])
+    brand_names = get_user_brand_names(current_user.id)
+    product_brand = (product.brand or "").strip() or infer_brand_from_name(product.name, brand_names)
     prices = chart_data["prices"]
 
     lowest_price = min(prices) if prices else None
@@ -623,6 +662,7 @@ def product_detail(product_id):
     return render_template(
         "product.html",
         product=product,
+        product_brand=product_brand,
         variants=variants,
         chart_data=chart_data,
         lowest_price=lowest_price,
