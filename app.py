@@ -308,9 +308,10 @@ def send_price_alert_email(alert, product, price):
                 server.login(username, password or "")
             server.send_message(message)
         return True
-    except Exception:
-        app.logger.exception("Could not send price alert for product %s", product.id)
-        return False
+    except Exception as e:
+            print(f"KRITIKUS SMTP HIBA: {e}") 
+            app.logger.exception("Could not send price alert for product %s", product.id)
+            return False
 
 
 def check_price_alert(product, price):
