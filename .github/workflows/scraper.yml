@@ -25,11 +25,11 @@ jobs:
 
       - name: Run Scraper Script
         env:
-          DATABASE_URL: ${{ secrets.postgresql://postgres.girothdayeauiciqavnp:Nemkelljelszo2023#@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true }}
-          SMTP_HOST: ${{ secrets.smtp-relay.brevo.com }}
-          SMTP_PORT: ${{ secrets.587 }}
-          SMTP_USERNAME: ${{ secrets.bfe399001@smtp-brevo.com }}
-          SMTP_PASSWORD: ${{ secrets.xsmtpsib-7a407336f754a823d05ceb3f7177300db20906f3a342da55f1af7ec481d523e8-geM4FxmvsxE8cTKO }}
-          SMTP_FROM: ${{ secrets.fragranzaalert@freemail.hu }}
-          SMTP_USE_TLS: ${{ secrets.true }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_USE_TLS: ${{ secrets.SMTP_USE_TLS }}
         run: python run_update.py
