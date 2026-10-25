@@ -108,10 +108,12 @@
         </label>
         <button type="submit">{{ 'Értesítő mentése' if price_alert else 'Értesítő beállítása' }}</button>
     </form>
+    {% for category, message in flash_messages %}
+        {% if category == 'price-alert-success' %}
+        <div class="price-alert-success" role="status" aria-live="polite">{{ message }}</div>
+        {% endif %}
+    {% endfor %}
     {% if price_alert %}
-    <div class="price-alert-status">
-        Beállított célár: <strong>{{ price_alert.target_price|int }} Ft</strong> · {{ price_alert.email }}
-    </div>
     <form method="POST" action="{{ url_for('save_price_alert', product_id=product.id) }}" class="price-alert-delete-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="action" value="delete">

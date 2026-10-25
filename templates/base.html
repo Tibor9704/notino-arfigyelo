@@ -50,18 +50,27 @@
 </nav>
 
 <div class="container">
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div class="flash-messages">
-                {% for message in messages %}
-                    <div class="flash-message">{{ message }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+    {% set flash_messages = get_flashed_messages(with_categories=true) %}
+    {% if flash_messages %}
+        <div class="flash-messages">
+            {% for category, message in flash_messages %}
+                {% if category != 'price-alert-success' %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
 
     {% block content %}{% endblock %}
 </div>
 
+<script>
+    document.querySelectorAll(".price-alert-success").forEach((message) => {
+        window.setTimeout(() => {
+            message.classList.add("is-hiding");
+            window.setTimeout(() => message.remove(), 800);
+        }, 3500);
+    });
+</script>
 </body>
 </html>

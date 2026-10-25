@@ -819,7 +819,7 @@ def save_price_alert(product_id):
     alert.notified_at = None
     alert.notified_price = None
     db.session.commit()
-    flash("Az árértesítőt elmentettük. A következő napi árfrissítéseknél ellenőrizzük.")
+    flash("Értesítő elmentve.", "price-alert-success")
     return redirect(url_for("product_detail", product_id=product.id))
 
 @app.route("/stats")
