@@ -323,8 +323,8 @@ def check_price_alert(product, price):
         alert.notified_price = None
         return
 
-    if alert.notified_at:
-        return
+    # if alert.notified_at:
+     #   return
 
     if send_price_alert_email(alert, product, price):
         alert.notified_at = datetime.utcnow()
