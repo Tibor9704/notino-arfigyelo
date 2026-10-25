@@ -1,4 +1,5 @@
 from datetime import datetime
+from itertools import product
 import os
 import time
 from app import app, normalize_size, check_price_alert
@@ -130,6 +131,7 @@ def run_update():
                     latest = PriceHistory.query.filter_by(product_id=product.id).order_by(PriceHistory.checked_at.desc()).first()
                     if latest:
                         latest.checked_at = datetime.utcnow()
+                    db.session.commit() 
                     continue
 
                 history = PriceHistory(
@@ -138,11 +140,13 @@ def run_update():
                     checked_at=datetime.utcnow(),
                 )
                 db.session.add(history)
+                db.session.commit() 
 
                 log(f"[{datetime.now()}] PRICE UPDATE -> {product.name} ({product.size}) -> {price} Ft")
                 time.sleep(1)
 
             except Exception as e:
+                db.session.rollback() 
                 log(f"[{datetime.now()}] ERROR -> {product.name} -> {e}")
                 continue
 
