@@ -92,6 +92,39 @@
 </div>
 {% endif %}
 
+{% if not is_group %}
+<section class="price-alert-card">
+    <h2>Árértesítő emailben</h2>
+    <p>Értesítünk, amikor ez a kiszerelés eléri vagy a célár alá esik.</p>
+    <form method="POST" action="{{ url_for('save_price_alert', product_id=product.id) }}" class="price-alert-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label>
+            Email cím
+            <input type="email" name="email" maxlength="254" autocomplete="email" required value="{{ price_alert.email if price_alert else '' }}" placeholder="nev@example.com">
+        </label>
+        <label>
+            Célár (Ft)
+            <input type="number" name="target_price" min="1" step="1" required value="{{ price_alert.target_price if price_alert else '' }}" placeholder="pl. 25000">
+        </label>
+        <button type="submit">{{ 'Értesítő mentése' if price_alert else 'Értesítő beállítása' }}</button>
+    </form>
+    {% if price_alert %}
+    <div class="price-alert-status">
+        Beállított célár: <strong>{{ price_alert.target_price|int }} Ft</strong> · {{ price_alert.email }}
+        {% if price_alert.notified_at %}<br>Az értesítést már elküldtük; újra akkor jelez, ha az ár előbb a cél fölé emelkedik, majd ismét eléri azt.{% endif %}
+    </div>
+    <form method="POST" action="{{ url_for('save_price_alert', product_id=product.id) }}" class="price-alert-delete-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="delete">
+        <button type="submit" class="price-alert-delete">Értesítő törlése</button>
+    </form>
+    {% endif %}
+    {% if not email_alert_configured %}
+    <p class="price-alert-note">Az emailküldéshez SMTP-beállítás szükséges az alkalmazás környezetében.</p>
+    {% endif %}
+</section>
+{% endif %}
+
 <div class="chart-filters" role="group" aria-label="Grafikon időszaka">
     <button type="button" data-period="7" aria-pressed="false" onclick="updateChart(7)">7 nap</button>
     <button type="button" data-period="30" aria-pressed="false" onclick="updateChart(30)">30 nap</button>

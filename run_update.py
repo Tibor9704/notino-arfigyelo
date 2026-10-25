@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 import time
-from app import app, normalize_size
+from app import app, normalize_size, check_price_alert
 from models import Product, PriceHistory, db
 from scraper import scrape_product
 
@@ -120,6 +120,8 @@ def run_update():
                 if price is None:
                     log(f"[{datetime.now()}] NO PRICE -> {product.name}")
                     continue
+
+                check_price_alert(product, price)
 
                 last_price = get_latest_price(product.id)
 

@@ -60,3 +60,15 @@ This project is intended for educational and personal use, and is now structured
 ## License
 
 This project is intended for educational and personal use.
+
+## Price alert email settings
+
+Price alerts require SMTP settings in the application environment:
+
+* `SMTP_HOST` — SMTP server hostname
+* `SMTP_PORT` — SMTP port (defaults to `587`)
+* `SMTP_USERNAME` and `SMTP_PASSWORD` — optional SMTP credentials
+* `SMTP_FROM` — sender email address (defaults to `SMTP_USERNAME`)
+* `SMTP_USE_TLS` — STARTTLS toggle (defaults to `true`)
+
+The price watcher checks saved alerts during its daily price update. It sends one email when the price reaches the target or falls below it, then rearms the alert after the price rises above the target again.

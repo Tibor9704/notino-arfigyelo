@@ -1637,3 +1637,15 @@ h1 {
 .pagination a { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: var(--shadow-sm); transition: border-color 0.18s ease, color 0.18s ease; }
 .pagination a:hover { border-color: var(--accent); color: var(--accent); }
 @media (max-width: 480px) { .pagination { gap: 10px; margin-top: 18px; } .pagination a { min-height: 42px; padding: 8px 12px; } }
+.price-alert-card { margin: 0 0 28px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-sm); }
+.price-alert-card h2 { margin: 0 0 6px; color: var(--ink); font-size: 19px; font-weight: 850; }
+.price-alert-card > p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+.price-alert-form { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.price-alert-form label { display: flex; flex: 1 1 220px; flex-direction: column; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.price-alert-form input { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-main); color: var(--ink); font: inherit; font-size: 14px; }
+.price-alert-form input:focus { outline: 2px solid rgba(184, 20, 80, 0.2); border-color: var(--accent); }
+.price-alert-form button { min-height: 44px; padding: 10px 16px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; font: inherit; font-weight: 750; cursor: pointer; }
+.price-alert-status, .price-alert-note { margin-top: 12px !important; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--muted); font-size: 12px; line-height: 1.5; }
+.price-alert-delete-form { margin-top: 8px; }
+.price-alert-delete { padding: 6px 0; border: 0; background: transparent; color: var(--danger); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+@media (max-width: 600px) { .price-alert-card { margin-bottom: 20px; padding: 16px 14px; } .price-alert-card h2 { font-size: 17px; } .price-alert-form { flex-direction: column; align-items: stretch; } .price-alert-form label { flex-basis: auto; } }

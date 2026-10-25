@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
 from datetime import datetime
 from datetime import timedelta
+from email.message import EmailMessage
+import smtplib
+import os
 from bisect import bisect_left
 import re
 from sqlalchemy import inspect, text
@@ -9,7 +12,7 @@ import hmac
 import secrets
 import click
 from config import Config
-from models import db, Product, PriceHistory, User
+from models import db, Product, PriceHistory, PriceAlert, User
 from scraper import is_allowed_notino_url, scrape_product
 
 app = Flask(__name__)
@@ -266,6 +269,67 @@ def build_chart_data(products):
 # PRICE UPDATE LOGIC
 
 
+def email_alert_is_configured():
+    return bool(
+        os.environ.get("SMTP_HOST")
+        and (os.environ.get("SMTP_FROM") or os.environ.get("SMTP_USERNAME"))
+    )
+
+
+def send_price_alert_email(alert, product, price):
+    host = os.environ.get("SMTP_HOST")
+    sender = os.environ.get("SMTP_FROM") or os.environ.get("SMTP_USERNAME")
+    if not host or not sender:
+        app.logger.error("Price alert email is not configured; set SMTP_HOST and SMTP_FROM")
+        return False
+
+    message = EmailMessage()
+    message["Subject"] = f"Elérte a célárat: {product.name} ({product.size or 'kiszerelés'})"
+    message["From"] = sender
+    message["To"] = alert.email
+    message.set_content(
+        f"A(z) {product.name} ({product.size or 'kiszerelés'}) ára elérte a megadott célárat.\n\n"
+        f"Aktuális ár: {price} Ft\n"
+        f"Célár: {alert.target_price} Ft\n"
+        f"Termék: {product.url}\n"
+    )
+
+    try:
+        port = int(os.environ.get("SMTP_PORT", "587"))
+        use_tls = os.environ.get("SMTP_USE_TLS", "true").lower() not in {"0", "false", "no"}
+        with smtplib.SMTP(host, port, timeout=20) as server:
+            server.ehlo()
+            if use_tls:
+                server.starttls()
+                server.ehlo()
+            username = os.environ.get("SMTP_USERNAME")
+            password = os.environ.get("SMTP_PASSWORD")
+            if username:
+                server.login(username, password or "")
+            server.send_message(message)
+        return True
+    except Exception:
+        app.logger.exception("Could not send price alert for product %s", product.id)
+        return False
+
+
+def check_price_alert(product, price):
+    alert = PriceAlert.query.filter_by(product_id=product.id).first()
+    if not alert:
+        return
+
+    if price > alert.target_price:
+        alert.notified_at = None
+        alert.notified_price = None
+        return
+
+    if alert.notified_at:
+        return
+
+    if send_price_alert_email(alert, product, price):
+        alert.notified_at = datetime.utcnow()
+        alert.notified_price = price
+
 def update_product_price(product):
     latest = (
         PriceHistory.query.filter_by(product_id=product.id)
@@ -312,6 +376,8 @@ def update_product_price(product):
         return
 
     # nincs változás
+    check_price_alert(product, price)
+
     if latest and latest.price == price:
         latest.checked_at = datetime.utcnow()
         db.session.commit()
@@ -566,6 +632,7 @@ def delete_product(product_id):
 
     product = Product.query.filter_by(user_id=current_user.id, id=product_id).first_or_404()
 
+    PriceAlert.query.filter_by(product_id=product.id).delete()
     PriceHistory.query.filter_by(product_id=product.id).delete()
 
     db.session.delete(product)
@@ -584,6 +651,7 @@ def delete_product_group(product_id):
     variants = get_group_products(product)
 
     for variant in variants:
+        PriceAlert.query.filter_by(product_id=variant.id).delete()
         PriceHistory.query.filter_by(product_id=variant.id).delete()
         db.session.delete(variant)
 
@@ -650,6 +718,7 @@ def product_detail(product_id):
     chart_data = build_chart_data([product])
     brand_names = get_user_brand_names(current_user.id)
     product_brand = (product.brand or "").strip() or infer_brand_from_name(product.name, brand_names)
+    price_alert = PriceAlert.query.filter_by(product_id=product.id).first()
     prices = chart_data["prices"]
 
     lowest_price = min(prices) if prices else None
@@ -691,6 +760,8 @@ def product_detail(product_id):
         "product.html",
         product=product,
         product_brand=product_brand,
+        price_alert=price_alert,
+        email_alert_configured=email_alert_is_configured(),
         variants=variants,
         chart_data=chart_data,
         lowest_price=lowest_price,
@@ -703,6 +774,50 @@ def product_detail(product_id):
         is_group=False,
     )
 
+
+@app.route("/product/<int:product_id>/price-alert", methods=["POST"])
+def save_price_alert(product_id):
+    current_user = get_current_user()
+    if not current_user:
+        return redirect(url_for("login"))
+
+    product = Product.query.filter_by(
+        user_id=current_user.id, id=product_id
+    ).first_or_404()
+    alert = PriceAlert.query.filter_by(product_id=product.id).first()
+
+    if request.form.get("action") == "delete":
+        if alert:
+            db.session.delete(alert)
+            db.session.commit()
+            flash("Az árértesítőt töröltük.")
+        return redirect(url_for("product_detail", product_id=product.id))
+
+    email = request.form.get("email", "").strip()
+    target_text = request.form.get("target_price", "").strip()
+    if len(email) > 254 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        flash("Adj meg egy érvényes email címet.")
+        return redirect(url_for("product_detail", product_id=product.id))
+
+    try:
+        target_price = int(target_text)
+        if target_price <= 0:
+            raise ValueError
+    except ValueError:
+        flash("A célár pozitív, egész forintösszeg legyen.")
+        return redirect(url_for("product_detail", product_id=product.id))
+
+    if alert is None:
+        alert = PriceAlert(product_id=product.id)
+        db.session.add(alert)
+
+    alert.email = email
+    alert.target_price = target_price
+    alert.notified_at = None
+    alert.notified_price = None
+    db.session.commit()
+    flash("Az árértesítőt elmentettük. A következő napi árfrissítéseknél ellenőrizzük.")
+    return redirect(url_for("product_detail", product_id=product.id))
 
 @app.route("/stats")
 def stats():

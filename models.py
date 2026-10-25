@@ -56,3 +56,18 @@ class PriceHistory(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey("products.id"))
     price = db.Column(db.Integer, nullable=True)
     checked_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class PriceAlert(db.Model):
+    __tablename__ = "price_alerts"
+    __table_args__ = (
+        db.UniqueConstraint("product_id", name="uq_price_alert_product"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=False)
+    email = db.Column(db.String(254), nullable=False)
+    target_price = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    notified_at = db.Column(db.DateTime, nullable=True)
+    notified_price = db.Column(db.Integer, nullable=True)
