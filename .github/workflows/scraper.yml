@@ -33,3 +33,4 @@ jobs:
           SMTP_FROM: ${{ secrets.SMTP_FROM }}
           SMTP_USE_TLS: ${{ secrets.SMTP_USE_TLS }}
         run: python run_update.py
+         
