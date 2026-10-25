@@ -272,6 +272,8 @@ def build_chart_data(products):
 def email_alert_is_configured():
     return bool(
         os.environ.get("SMTP_HOST")
+        and os.environ.get("SMTP_USERNAME")
+        and os.environ.get("SMTP_PASSWORD")
         and (os.environ.get("SMTP_FROM") or os.environ.get("SMTP_USERNAME"))
     )
 
@@ -279,8 +281,10 @@ def email_alert_is_configured():
 def send_price_alert_email(alert, product, price):
     host = os.environ.get("SMTP_HOST")
     sender = os.environ.get("SMTP_FROM") or os.environ.get("SMTP_USERNAME")
-    if not host or not sender:
-        app.logger.error("Price alert email is not configured; set SMTP_HOST and SMTP_FROM")
+    username = os.environ.get("SMTP_USERNAME")
+    password = os.environ.get("SMTP_PASSWORD")
+    if not host or not sender or not username or not password:
+        app.logger.error("Price alert email requires SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD, and SMTP_FROM (or SMTP_USERNAME as sender)")
         return False
 
     message = EmailMessage()
@@ -295,17 +299,14 @@ def send_price_alert_email(alert, product, price):
     )
 
     try:
-        port = int(os.environ.get("SMTP_PORT", "587"))
-        use_tls = os.environ.get("SMTP_USE_TLS", "true").lower() not in {"0", "false", "no"}
+        port = int(os.environ.get("SMTP_PORT") or "587")
+        use_tls = (os.environ.get("SMTP_USE_TLS") or "true").lower() not in {"0", "false", "no"}
         with smtplib.SMTP(host, port, timeout=20) as server:
             server.ehlo()
             if use_tls:
                 server.starttls()
                 server.ehlo()
-            username = os.environ.get("SMTP_USERNAME")
-            password = os.environ.get("SMTP_PASSWORD")
-            if username:
-                server.login(username, password or "")
+            server.login(username, password)
             server.send_message(message)
         return True
     except Exception as e:
@@ -320,14 +321,15 @@ def check_price_alert(product, price):
         return
 
     if price > alert.target_price:
+        app.logger.info("Price alert for product %s not reached: %s Ft > %s Ft", product.id, price, alert.target_price)
         alert.notified_at = None
         alert.notified_price = None
         return
-
-    # if alert.notified_at:
-     #   return
+    if alert.notified_at:
+        return
 
     if send_price_alert_email(alert, product, price):
+        app.logger.info("Price alert email sent for product %s at %s Ft", product.id, price)
         alert.notified_at = datetime.utcnow()
         alert.notified_price = price
 

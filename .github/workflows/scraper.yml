@@ -25,12 +25,17 @@ jobs:
 
       - name: Run Scraper Script
         env:
-          DATABASE_URL2: ${{ secrets.DATABASE_URL2 }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL2 || secrets.DATABASE_URL }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           SMTP_FROM: ${{ secrets.SMTP_FROM }}
           SMTP_USE_TLS: ${{ secrets.SMTP_USE_TLS }}
-        run: python run_update.py
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL2 or DATABASE_URL secret is required for production price updates" >&2
+            exit 1
+          fi
+          python run_update.py
          

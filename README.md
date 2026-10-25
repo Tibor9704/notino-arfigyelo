@@ -67,7 +67,7 @@ Price alerts require SMTP settings in the application environment:
 
 * `SMTP_HOST` — SMTP server hostname
 * `SMTP_PORT` — SMTP port (defaults to `587`)
-* `SMTP_USERNAME` and `SMTP_PASSWORD` — optional SMTP credentials
+* `SMTP_USERNAME` and `SMTP_PASSWORD` — Brevo SMTP login and key (required)
 * `SMTP_FROM` — sender email address (defaults to `SMTP_USERNAME`)
 * `SMTP_USE_TLS` — STARTTLS toggle (defaults to `true`)
 
