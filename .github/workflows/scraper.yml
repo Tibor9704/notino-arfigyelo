@@ -25,7 +25,7 @@ jobs:
 
       - name: Run Scraper Script
         env:
-          DATABASE_URL2: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL2: ${{ secrets.DATABASE_URL2 }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
