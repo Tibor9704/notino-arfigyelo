@@ -111,7 +111,6 @@
     {% if price_alert %}
     <div class="price-alert-status">
         Beállított célár: <strong>{{ price_alert.target_price|int }} Ft</strong> · {{ price_alert.email }}
-        {% if price_alert.notified_at %}<br>Az értesítést már elküldtük; újra akkor jelez, ha az ár előbb a cél fölé emelkedik, majd ismét eléri azt.{% endif %}
     </div>
     <form method="POST" action="{{ url_for('save_price_alert', product_id=product.id) }}" class="price-alert-delete-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
