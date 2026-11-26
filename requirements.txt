@@ -6,3 +6,4 @@ APScheduler
 psycopg2-binary
 psycopg[binary]
 gunicorn
+curl_cffi
